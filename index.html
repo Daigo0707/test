@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>残業代・不当解雇・ハラスメントのご相談｜【弁護士法人○○】労働問題相談センター</title>
+<meta name="description" content="残業代請求・不当解雇・パワハラなど労働トラブルは【弁護士法人○○】へ。相談無料・着手金0円・全国対応。労働者のあなたの味方として、正当な権利の回復をサポートします。">
+<style>
+  :root{
+    --navy:#0f2c4c;
+    --blue:#1c6dd0;
+    --accent:#e8852b;
+    --accent-dark:#cf6f18;
+    --bg:#f5f7fa;
+    --text:#26303a;
+    --muted:#5f6b78;
+    --line:#e2e8f0;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;color:var(--text);line-height:1.8;background:#fff;-webkit-font-smoothing:antialiased}
+  img{max-width:100%;display:block}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+  .section{padding:72px 0}
+  .section-alt{background:var(--bg)}
+  h2.title{text-align:center;font-size:1.9rem;line-height:1.5;color:var(--navy);margin-bottom:8px;font-weight:800}
+  h2.title .en{display:block;font-size:.8rem;letter-spacing:.2em;color:var(--blue);font-weight:700;margin-bottom:6px}
+  .lead{text-align:center;color:var(--muted);margin-bottom:44px}
+
+  /* Header */
+  header{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid var(--line)}
+  .header-inner{display:flex;align-items:center;justify-content:space-between;height:68px}
+  .logo{font-weight:800;color:var(--navy);font-size:1.15rem}
+  .logo small{display:block;font-size:.62rem;color:var(--muted);font-weight:500;letter-spacing:.05em}
+  .header-cta{display:flex;align-items:center;gap:14px}
+  .header-tel{text-align:right;line-height:1.2}
+  .header-tel .num{font-size:1.4rem;font-weight:800;color:var(--navy)}
+  .header-tel small{font-size:.66rem;color:var(--muted)}
+  .btn{display:inline-block;border-radius:8px;font-weight:700;text-align:center;transition:.2s;cursor:pointer}
+  .btn-accent{background:var(--accent);color:#fff;padding:12px 22px;box-shadow:0 4px 12px rgba(232,133,43,.35)}
+  .btn-accent:hover{background:var(--accent-dark)}
+  @media(max-width:820px){.header-tel{display:none}}
+
+  /* Hero */
+  .hero{background:linear-gradient(135deg,#0f2c4c 0%,#1c4a7e 100%);color:#fff;position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;right:-120px;top:-120px;width:360px;height:360px;background:rgba(255,255,255,.05);border-radius:50%}
+  .hero-inner{padding:64px 0 56px;position:relative;z-index:2}
+  .hero .badge{display:inline-block;background:var(--accent);font-size:.8rem;font-weight:700;padding:6px 16px;border-radius:30px;margin-bottom:20px}
+  .hero h1{font-size:2.5rem;line-height:1.4;font-weight:900;margin-bottom:18px}
+  .hero h1 .mark{color:#ffd24a}
+  .hero p.sub{font-size:1.05rem;color:#d8e4f0;margin-bottom:30px}
+  .hero-points{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:34px}
+  .hero-points span{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);padding:8px 16px;border-radius:8px;font-weight:700;font-size:.92rem}
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .btn-hero-tel{background:#fff;color:var(--navy);padding:16px 26px;font-size:1.05rem;display:flex;flex-direction:column;border-radius:10px}
+  .btn-hero-tel .num{font-size:1.6rem;font-weight:900}
+  .btn-hero-form{background:var(--accent);color:#fff;padding:20px 34px;font-size:1.15rem;border-radius:10px;box-shadow:0 6px 16px rgba(232,133,43,.4)}
+  .btn-hero-form:hover{background:var(--accent-dark)}
+  @media(max-width:820px){.hero h1{font-size:1.8rem}.btn-hero-form{width:100%}}
+
+  /* Problems */
+  .problem-box{background:#fff;border:2px solid var(--line);border-radius:16px;padding:40px;max-width:760px;margin:0 auto}
+  .problem-list{display:grid;grid-template-columns:1fr 1fr;gap:14px 28px}
+  .problem-list li{list-style:none;position:relative;padding-left:34px;font-weight:600}
+  .problem-list li::before{content:"✓";position:absolute;left:0;top:0;width:24px;height:24px;background:var(--accent);color:#fff;border-radius:50%;font-size:.8rem;display:flex;align-items:center;justify-content:center}
+  .problem-foot{text-align:center;margin-top:34px;font-size:1.2rem;font-weight:800;color:var(--navy)}
+  .problem-foot .mark{color:var(--accent)}
+  @media(max-width:680px){.problem-list{grid-template-columns:1fr}.problem-box{padding:26px}}
+
+  /* Reasons */
+  .reasons{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .reason{background:#fff;border-radius:14px;padding:32px 26px;box-shadow:0 6px 20px rgba(15,44,76,.07);text-align:center}
+  .reason .no{display:inline-block;font-size:.72rem;letter-spacing:.1em;color:#fff;background:var(--blue);padding:4px 14px;border-radius:20px;margin-bottom:16px;font-weight:700}
+  .reason .ico{font-size:2.6rem;margin-bottom:12px}
+  .reason h3{font-size:1.2rem;color:var(--navy);margin-bottom:10px;font-weight:800}
+  .reason p{font-size:.92rem;color:var(--muted);text-align:left}
+  @media(max-width:820px){.reasons{grid-template-columns:1fr}}
+
+  /* Practice areas */
+  .areas{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+  .area{background:#fff;border:1px solid var(--line);border-radius:12px;padding:28px;display:flex;gap:18px;transition:.2s}
+  .area:hover{box-shadow:0 8px 22px rgba(15,44,76,.1);transform:translateY(-2px)}
+  .area .ico{font-size:2.2rem;flex:0 0 auto}
+  .area h3{color:var(--navy);font-size:1.15rem;margin-bottom:6px;font-weight:800}
+  .area p{font-size:.9rem;color:var(--muted)}
+  @media(max-width:680px){.areas{grid-template-columns:1fr}}
+
+  /* Cases */
+  .cases{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .case{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 6px 18px rgba(15,44,76,.08)}
+  .case .tag{background:var(--navy);color:#fff;font-size:.78rem;font-weight:700;padding:8px 16px}
+  .case .body{padding:22px}
+  .case .amount{font-size:.85rem;color:var(--muted);margin-bottom:8px}
+  .case .amount b{font-size:1.5rem;color:var(--accent);font-weight:900}
+  .case p{font-size:.88rem;color:var(--muted)}
+  @media(max-width:820px){.cases{grid-template-columns:1fr}}
+
+  /* Fees */
+  .fee-table{max-width:760px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 6px 18px rgba(15,44,76,.08)}
+  .fee-table table{width:100%;border-collapse:collapse}
+  .fee-table th,.fee-table td{padding:18px 22px;border-bottom:1px solid var(--line);text-align:left}
+  .fee-table th{background:var(--navy);color:#fff;font-weight:700;width:38%}
+  .fee-table tr:last-child td{border-bottom:none}
+  .fee-note{text-align:center;color:var(--muted);font-size:.85rem;margin-top:16px}
+
+  /* Flow */
+  .flow{max-width:780px;margin:0 auto}
+  .flow-step{display:flex;gap:22px;padding:22px 0;border-bottom:1px dashed var(--line)}
+  .flow-step:last-child{border-bottom:none}
+  .flow-num{flex:0 0 auto;width:52px;height:52px;background:var(--blue);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.3rem}
+  .flow-step h3{color:var(--navy);font-size:1.15rem;margin-bottom:4px;font-weight:800}
+  .flow-step p{font-size:.92rem;color:var(--muted)}
+
+  /* Lawyer */
+  .lawyer{display:flex;gap:34px;align-items:center;background:#fff;border-radius:16px;padding:36px;box-shadow:0 6px 20px rgba(15,44,76,.08);max-width:860px;margin:0 auto}
+  .lawyer .photo{flex:0 0 200px;height:240px;background:linear-gradient(135deg,#dbe6f2,#b9cde2);border-radius:12px;display:flex;align-items:center;justify-content:center;color:#6b88a8;font-size:.85rem}
+  .lawyer h3{font-size:1.4rem;color:var(--navy);margin-bottom:4px;font-weight:800}
+  .lawyer .role{color:var(--blue);font-size:.9rem;font-weight:700;margin-bottom:14px}
+  .lawyer p{font-size:.95rem;color:var(--muted)}
+  @media(max-width:680px){.lawyer{flex-direction:column;text-align:center}}
+
+  /* Voice */
+  .voices{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
+  .voice{background:#fff;border-left:5px solid var(--accent);border-radius:0 12px 12px 0;padding:26px;box-shadow:0 4px 14px rgba(15,44,76,.06)}
+  .voice .stars{color:#f5b301;margin-bottom:8px}
+  .voice h4{color:var(--navy);margin-bottom:8px;font-size:1.05rem}
+  .voice p{font-size:.9rem;color:var(--muted)}
+  .voice .who{margin-top:12px;font-size:.8rem;color:#9aa6b2}
+  @media(max-width:680px){.voices{grid-template-columns:1fr}}
+
+  /* FAQ */
+  .faq{max-width:780px;margin:0 auto}
+  .faq details{background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:12px;overflow:hidden}
+  .faq summary{padding:18px 24px;font-weight:700;color:var(--navy);cursor:pointer;list-style:none;position:relative;padding-left:52px}
+  .faq summary::-webkit-details-marker{display:none}
+  .faq summary::before{content:"Q";position:absolute;left:20px;top:16px;width:24px;height:24px;background:var(--blue);color:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.85rem}
+  .faq summary::after{content:"＋";position:absolute;right:22px;top:18px;color:var(--blue);font-weight:700}
+  .faq details[open] summary::after{content:"－"}
+  .faq .ans{padding:0 24px 20px 52px;color:var(--muted);font-size:.92rem}
+
+  /* CTA band */
+  .cta-band{background:linear-gradient(135deg,#cf6f18,#e8852b);color:#fff;text-align:center}
+  .cta-band .section{padding:56px 0}
+  .cta-band h2{font-size:1.8rem;font-weight:900;margin-bottom:10px}
+  .cta-band p{margin-bottom:26px;font-size:1.02rem}
+  .cta-band .row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;align-items:center}
+  .cta-band .tel{background:#fff;color:var(--navy);padding:14px 28px;border-radius:10px;line-height:1.2}
+  .cta-band .tel .num{font-size:1.7rem;font-weight:900;display:block}
+  .cta-band .formbtn{background:var(--navy);color:#fff;padding:20px 36px;border-radius:10px;font-size:1.15rem;font-weight:800}
+
+  /* Office */
+  .office-table{max-width:680px;margin:0 auto;width:100%;border-collapse:collapse}
+  .office-table th,.office-table td{padding:14px 18px;border-bottom:1px solid var(--line);text-align:left;font-size:.95rem}
+  .office-table th{width:32%;color:var(--navy);font-weight:700}
+
+  /* Form */
+  .form-card{max-width:640px;margin:0 auto;background:#fff;border-radius:16px;padding:38px;box-shadow:0 8px 24px rgba(15,44,76,.1)}
+  .form-row{margin-bottom:18px}
+  .form-row label{display:block;font-weight:700;color:var(--navy);margin-bottom:6px;font-size:.92rem}
+  .form-row label .req{color:#d23;font-size:.78rem;margin-left:6px}
+  .form-row input,.form-row select,.form-row textarea{width:100%;padding:12px 14px;border:1px solid #cdd6e0;border-radius:8px;font-size:1rem;font-family:inherit}
+  .form-row textarea{min-height:120px;resize:vertical}
+  .form-submit{width:100%;background:var(--accent);color:#fff;padding:18px;font-size:1.15rem;border:none;border-radius:10px;font-weight:800;cursor:pointer;box-shadow:0 6px 16px rgba(232,133,43,.4)}
+  .form-submit:hover{background:var(--accent-dark)}
+  .form-privacy{text-align:center;font-size:.82rem;color:var(--muted);margin-top:14px}
+
+  /* Footer */
+  footer{background:var(--navy);color:#c3d0de;padding:40px 0;text-align:center;font-size:.85rem}
+  footer .logo{color:#fff;margin-bottom:14px}
+  footer .links{margin:16px 0}
+  footer .links a{margin:0 12px;color:#c3d0de}
+  footer .copy{color:#7c91a8;font-size:.78rem;margin-top:16px}
+
+  /* Fixed mobile CTA */
+  .mobile-cta{display:none}
+  @media(max-width:820px){
+    .mobile-cta{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:60;box-shadow:0 -4px 14px rgba(0,0,0,.15)}
+    .mobile-cta a{flex:1;padding:15px 0;text-align:center;font-weight:800;color:#fff}
+    .mobile-cta .m-tel{background:var(--navy)}
+    .mobile-cta .m-form{background:var(--accent)}
+    body{padding-bottom:54px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== Header ===== -->
+<header>
+  <div class="wrap header-inner">
+    <div class="logo">弁護士法人○○<small>労働問題相談センター</small></div>
+    <div class="header-cta">
+      <div class="header-tel">
+        <div class="num">0120-000-000</div>
+        <small>平日9:00-21:00／土日祝も対応</small>
+      </div>
+      <a href="#contact" class="btn btn-accent">無料相談</a>
+    </div>
+  </div>
+</header>
+
+<!-- ===== Hero ===== -->
+<section class="hero">
+  <div class="wrap hero-inner">
+    <span class="badge">相談無料・着手金0円・全国対応</span>
+    <h1>その残業代、<span class="mark">取り戻せます。</span><br>泣き寝入りする前に、弁護士へ。</h1>
+    <p class="sub">残業代の未払い・不当解雇・パワハラ。<br>働くあなたの「正当な権利」を、労働問題に強い弁護士が取り戻します。</p>
+    <div class="hero-points">
+      <span>✓ ご相談は何度でも無料</span>
+      <span>✓ 着手金0円・完全成功報酬制も</span>
+      <span>✓ 在職中・秘密厳守でご相談OK</span>
+    </div>
+    <div class="hero-cta">
+      <a href="tel:0120000000" class="btn btn-hero-tel"><span>お電話でのご相談</span><span class="num">0120-000-000</span></a>
+      <a href="#contact" class="btn btn-hero-form">24時間 無料相談フォーム ▶</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Problems ===== -->
+<section class="section">
+  <div class="wrap">
+    <h2 class="title"><span class="en">YOUR TROUBLE</span>こんなお悩みありませんか？</h2>
+    <p class="lead">ひとつでも当てはまる方は、ぜひ一度ご相談ください。</p>
+    <div class="problem-box">
+      <ul class="problem-list">
+        <li>サービス残業が当たり前になっている</li>
+        <li>残業代がきちんと払われていない</li>
+        <li>突然、解雇・退職を迫られた</li>
+        <li>「自己都合退職」を強要された</li>
+        <li>上司からのパワハラ・暴言がつらい</li>
+        <li>セクハラ・マタハラの被害にあった</li>
+        <li>給料・賞与を一方的に減らされた</li>
+        <li>退職したいが会社が辞めさせてくれない</li>
+        <li>仕事中のケガ（労災）を認めてもらえない</li>
+        <li>退職金が支払われない</li>
+      </ul>
+      <p class="problem-foot">その悩み、<span class="mark">弁護士に相談すれば解決できる</span>かもしれません。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Reasons ===== -->
+<section class="section section-alt">
+  <div class="wrap">
+    <h2 class="title"><span class="en">REASON</span>当事務所が選ばれる3つの理由</h2>
+    <p class="lead">数ある法律事務所の中から、私たちが選ばれ続ける理由があります。</p>
+    <div class="reasons">
+      <div class="reason">
+        <span class="no">理由 01</span>
+        <div class="ico">⚖️</div>
+        <h3>労働問題に特化した実績</h3>
+        <p>残業代請求・不当解雇・ハラスメント案件を中心に、年間○○件以上の労働事件を解決。労働者側の代理に注力してきた専門チームが対応します。</p>
+      </div>
+      <div class="reason">
+        <span class="no">理由 02</span>
+        <div class="ico">💰</div>
+        <h3>相談無料・着手金0円</h3>
+        <p>ご相談は何度でも無料。残業代請求などは着手金0円・完全成功報酬制にも対応し、回収できた金額の中からお支払いいただくため、初期費用の心配は不要です。</p>
+      </div>
+      <div class="reason">
+        <span class="no">理由 03</span>
+        <div class="ico">🤝</div>
+        <h3>あなたに代わって会社と交渉</h3>
+        <p>会社との直接のやり取りはすべて弁護士が代行。精神的な負担を抱えず、秘密厳守で進められます。在職中のご相談も歓迎しています。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Practice areas ===== -->
+<section class="section">
+  <div class="wrap">
+    <h2 class="title"><span class="en">PRACTICE AREA</span>取り扱い分野</h2>
+    <p class="lead">労働問題は、あなたが思っているより幅広く解決できます。</p>
+    <div class="areas">
+      <div class="area"><div class="ico">⏱️</div><div><h3>残業代・未払い賃金請求</h3><p>サービス残業や固定残業代を理由にした未払い分を、タイムカードや各種記録をもとに過去にさかのぼって請求します。</p></div></div>
+      <div class="area"><div class="ico">🚪</div><div><h3>不当解雇・退職勧奨</h3><p>正当な理由のない解雇や、執拗な退職の強要は違法の可能性があります。地位の回復や解決金の請求を行います。</p></div></div>
+      <div class="area"><div class="ico">🛡️</div><div><h3>パワハラ・セクハラ</h3><p>職場でのハラスメント被害について、慰謝料請求や会社の安全配慮義務違反の追及をサポートします。</p></div></div>
+      <div class="area"><div class="ico">📄</div><div><h3>退職代行・退職トラブル</h3><p>「辞めさせてくれない」「退職金が出ない」といったトラブルを、弁護士が法的に正しく解決します。</p></div></div>
+      <div class="area"><div class="ico">🏥</div><div><h3>労災（労働災害）</h3><p>仕事中のケガ・病気・過労について、労災認定の申請から会社への損害賠償請求までを一貫して支援します。</p></div></div>
+      <div class="area"><div class="ico">📉</div><div><h3>不当な減給・降格</h3><p>一方的な給与カットや降格処分の有効性を争い、本来受け取るべき賃金の回復を目指します。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Cases ===== -->
+<section class="section section-alt">
+  <div class="wrap">
+    <h2 class="title"><span class="en">RESULTS</span>解決事例</h2>
+    <p class="lead">※ 実際の事例をもとに、内容を一部変更して掲載しています。</p>
+    <div class="cases">
+      <div class="case">
+        <div class="tag">残業代請求／30代・男性</div>
+        <div class="body">
+          <div class="amount">回収額 <b>約280万円</b></div>
+          <p>固定残業代を理由に支払いを拒まれていたが、勤怠記録を精査し交渉。約2年分の未払い残業代を回収できました。</p>
+        </div>
+      </div>
+      <div class="case">
+        <div class="tag">不当解雇／40代・女性</div>
+        <div class="body">
+          <div class="amount">解決金 <b>約350万円</b></div>
+          <p>能力不足を理由とした突然の解雇。手続きの違法性を主張し、解決金を得て円満に和解しました。</p>
+        </div>
+      </div>
+      <div class="case">
+        <div class="tag">パワハラ／20代・男性</div>
+        <div class="body">
+          <div class="amount">慰謝料 <b>約120万円</b></div>
+          <p>上司の暴言で休職に。録音やメールを証拠に会社へ請求し、慰謝料の支払いと再発防止を実現しました。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Fees ===== -->
+<section class="section">
+  <div class="wrap">
+    <h2 class="title"><span class="en">FEE</span>弁護士費用</h2>
+    <p class="lead">明朗会計。費用は事前にしっかりご説明します。</p>
+    <div class="fee-table">
+      <table>
+        <tr><th>法律相談料</th><td><b>0円</b>（何度でも無料）</td></tr>
+        <tr><th>着手金</th><td><b>0円〜</b>（残業代請求などは着手金0円に対応）</td></tr>
+        <tr><th>報酬金</th><td>回収・解決できた金額の <b>○○%</b>（完全成功報酬制）</td></tr>
+        <tr><th>その他実費</th><td>収入印紙代・郵券代など（事前にご説明します）</td></tr>
+      </table>
+    </div>
+    <p class="fee-note">※ 上記は一例です。事案の内容により異なります。費用は契約前に必ず書面でご提示します。</p>
+  </div>
+</section>
+
+<!-- ===== Flow ===== -->
+<section class="section section-alt">
+  <div class="wrap">
+    <h2 class="title"><span class="en">FLOW</span>ご相談の流れ</h2>
+    <p class="lead">お問い合わせから解決まで、4つのステップ。</p>
+    <div class="flow">
+      <div class="flow-step"><div class="flow-num">1</div><div><h3>お問い合わせ</h3><p>お電話または24時間受付のフォームから、お気軽にご連絡ください。秘密は厳守します。</p></div></div>
+      <div class="flow-step"><div class="flow-num">2</div><div><h3>無料相談</h3><p>弁護士がお話を伺い、見通しと進め方、費用をわかりやすくご説明します。来所・オンライン・電話に対応。</p></div></div>
+      <div class="flow-step"><div class="flow-num">3</div><div><h3>ご依頼・交渉開始</h3><p>ご納得いただいたうえでご契約。以降は弁護士が会社との交渉・手続きを代行します。</p></div></div>
+      <div class="flow-step"><div class="flow-num">4</div><div><h3>解決・回収</h3><p>交渉・労働審判・訴訟などを通じて解決へ。回収した金額をお渡しし、終了となります。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Lawyer ===== -->
+<section class="section">
+  <div class="wrap">
+    <h2 class="title"><span class="en">LAWYER</span>担当弁護士のご紹介</h2>
+    <p class="lead"></p>
+    <div class="lawyer">
+      <div class="photo">弁護士写真</div>
+      <div>
+        <h3>○○ ○○<span style="font-size:.8rem;color:var(--muted);font-weight:500;margin-left:8px">（○○ ○○）</span></h3>
+        <div class="role">弁護士法人○○ 代表弁護士／○○弁護士会所属</div>
+        <p>「働く人が、正当な対価と尊厳を守られる社会に」をモットーに、労働者側の事件に注力してきました。会社を相手に一人で立ち向かうのは、大きな不安と勇気が必要です。だからこそ、私たちが盾となり、剣となります。どんな小さなことでも、まずはお話をお聞かせください。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Voices ===== -->
+<section class="section section-alt">
+  <div class="wrap">
+    <h2 class="title"><span class="en">VOICE</span>ご相談者さまの声</h2>
+    <p class="lead"></p>
+    <div class="voices">
+      <div class="voice"><div class="stars">★★★★★</div><h4>諦めていた残業代が戻ってきました</h4><p>「どうせ無理」と思っていましたが、相談したその日に見通しを示してもらえて安心。会社とのやり取りもすべてお任せでき、本当に助かりました。</p><div class="who">― 30代・男性（残業代請求）</div></div>
+      <div class="voice"><div class="stars">★★★★★</div><h4>不安な気持ちに寄り添ってくれた</h4><p>解雇されて精神的に参っていましたが、丁寧に話を聞いてくれて前を向けました。費用も明確で、最後まで信頼できました。</p><div class="who">― 40代・女性（不当解雇）</div></div>
+      <div class="voice"><div class="stars">★★★★★</div><h4>在職中でも相談できて安心</h4><p>会社に知られたくなかったのですが、秘密厳守で対応いただけました。証拠の集め方まで具体的に教えてもらえました。</p><div class="who">― 20代・男性（パワハラ）</div></div>
+      <div class="voice"><div class="stars">★★★★★</div><h4>退職トラブルがスムーズに解決</h4><p>辞めさせてもらえず困っていましたが、弁護士に入ってもらった途端に話が進みました。もっと早く相談すればよかったです。</p><div class="who">― 30代・女性（退職トラブル）</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FAQ ===== -->
+<section class="section">
+  <div class="wrap">
+    <h2 class="title"><span class="en">FAQ</span>よくあるご質問</h2>
+    <p class="lead"></p>
+    <div class="faq">
+      <details open><summary>相談だけでも費用はかかりますか？</summary><div class="ans">いいえ。ご相談は何度でも無料です。「依頼するか決めていない」という段階でも、お気軽にご利用ください。</div></details>
+      <details><summary>在職中ですが、会社に知られず相談できますか？</summary><div class="ans">はい。秘密は厳守します。会社に知られないよう配慮しながら進めますので、在職中の方も安心してご相談ください。</div></details>
+      <details><summary>もう退職してしまったのですが、残業代は請求できますか？</summary><div class="ans">退職後でも請求は可能です。ただし残業代には時効があるため、できるだけ早めにご相談ください。</div></details>
+      <details><summary>証拠があまりないのですが、依頼できますか？</summary><div class="ans">まずはご相談ください。手元にある資料から見通しを判断し、必要な証拠の集め方もアドバイスいたします。</div></details>
+      <details><summary>費用はどのくらいかかりますか？</summary><div class="ans">残業代請求などは着手金0円・完全成功報酬制に対応しています。契約前に必ず費用の総額感を書面でご説明します。</div></details>
+      <details><summary>遠方に住んでいますが対応してもらえますか？</summary><div class="ans">全国対応・オンライン相談に対応しています。お電話やビデオ通話でのご相談も可能です。</div></details>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CTA band ===== -->
+<div class="cta-band">
+  <div class="wrap section">
+    <h2>まずは無料相談から。一人で悩まないでください。</h2>
+    <p>ご相談いただいたからといって、必ず依頼が必要なわけではありません。<br>あなたに合った解決方法を、一緒に考えます。</p>
+    <div class="row">
+      <a href="tel:0120000000" class="tel"><small>お電話でのご相談（平日9-21時／土日祝対応）</small><span class="num">0120-000-000</span></a>
+      <a href="#contact" class="formbtn">24時間 無料相談フォーム ▶</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Contact form ===== -->
+<section class="section section-alt" id="contact">
+  <div class="wrap">
+    <h2 class="title"><span class="en">CONTACT</span>無料相談のお申し込み</h2>
+    <p class="lead">下記フォームより、24時間いつでもお申し込みいただけます。<br>原則1営業日以内に弁護士または担当スタッフよりご連絡します。</p>
+    <form class="form-card" action="#" method="post" onsubmit="alert('※これは草案のサンプルフォームです。送信機能は未実装です。');return false;">
+      <div class="form-row"><label>お名前<span class="req">必須</span></label><input type="text" name="name" placeholder="例）山田 太郎" required></div>
+      <div class="form-row"><label>メールアドレス<span class="req">必須</span></label><input type="email" name="email" placeholder="例）sample@example.com" required></div>
+      <div class="form-row"><label>電話番号<span class="req">必須</span></label><input type="tel" name="tel" placeholder="例）090-0000-0000" required></div>
+      <div class="form-row"><label>ご相談内容の種類</label>
+        <select name="category">
+          <option>残業代・未払い賃金</option>
+          <option>不当解雇・退職勧奨</option>
+          <option>パワハラ・セクハラ</option>
+          <option>退職代行・退職トラブル</option>
+          <option>労災</option>
+          <option>その他・わからない</option>
+        </select>
+      </div>
+      <div class="form-row"><label>ご相談内容<span class="req">必須</span></label><textarea name="message" placeholder="差し支えのない範囲で、状況をお書きください。" required></textarea></div>
+      <button type="submit" class="form-submit">無料で相談を申し込む</button>
+      <p class="form-privacy">送信をもって<a href="#" style="color:var(--blue)">プライバシーポリシー</a>に同意したものとみなします。<br>いただいた個人情報は、ご相談対応の目的にのみ使用します。</p>
+    </form>
+  </div>
+</section>
+
+<!-- ===== Office ===== -->
+<section class="section">
+  <div class="wrap">
+    <h2 class="title"><span class="en">OFFICE</span>事務所概要</h2>
+    <p class="lead"></p>
+    <table class="office-table">
+      <tr><th>事務所名</th><td>弁護士法人○○</td></tr>
+      <tr><th>所在地</th><td>〒000-0000　○○県○○市○○ 0-0-0 ○○ビル0F</td></tr>
+      <tr><th>電話番号</th><td>0120-000-000</td></tr>
+      <tr><th>受付時間</th><td>平日 9:00〜21:00（土日祝も対応）</td></tr>
+      <tr><th>所属弁護士会</th><td>○○弁護士会</td></tr>
+      <tr><th>対応エリア</th><td>全国対応（オンライン相談可）</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ===== Footer ===== -->
+<footer>
+  <div class="wrap">
+    <div class="logo" style="font-size:1.2rem;font-weight:800">弁護士法人○○ 労働問題相談センター</div>
+    <div class="links">
+      <a href="#contact">無料相談</a>
+      <a href="#">プライバシーポリシー</a>
+      <a href="#">事務所概要</a>
+    </div>
+    <div class="copy">© 弁護士法人○○ All Rights Reserved.</div>
+  </div>
+</footer>
+
+<!-- ===== Mobile fixed CTA ===== -->
+<div class="mobile-cta">
+  <a href="tel:0120000000" class="m-tel">📞 電話で相談</a>
+  <a href="#contact" class="m-form">✉️ 無料相談フォーム</a>
+</div>
+
+</body>
+</html>
