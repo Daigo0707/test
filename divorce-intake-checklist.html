@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>離婚事件 受任前ヒアリング支援ツール｜チェックリスト・聴取事項自動生成</title>
+<style>
+  :root{
+    --navy:#0f2c4c;
+    --blue:#1c6dd0;
+    --accent:#e8852b;
+    --accent-dark:#cf6f18;
+    --bg:#f5f7fa;
+    --text:#26303a;
+    --muted:#5f6b78;
+    --line:#e2e8f0;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;color:var(--text);line-height:1.7;background:var(--bg);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px 20px 80px}
+  header{background:var(--navy);color:#fff;padding:22px 0}
+  header .wrap{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  header h1{font-size:1.25rem;font-weight:800}
+  header p{font-size:.78rem;color:#cfe0f2}
+  h2{font-size:1.05rem;color:var(--navy);font-weight:800;margin-bottom:14px;border-left:5px solid var(--accent);padding-left:10px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:24px;margin-bottom:22px;box-shadow:0 2px 10px rgba(15,44,76,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+  label.field{display:block;font-size:.82rem;font-weight:700;color:var(--muted);margin-bottom:4px}
+  input[type=text],input[type=date],input[type=number],select,textarea{
+    width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;font-size:.92rem;font-family:inherit;background:#fff
+  }
+  .field-wrap{margin-bottom:14px}
+  fieldset{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+  legend{font-weight:800;color:var(--navy);font-size:.88rem;padding:0 6px}
+  .opt-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 18px}
+  @media(max-width:760px){.opt-row{grid-template-columns:1fr}}
+  .opt{display:flex;align-items:center;gap:8px;font-size:.9rem}
+  .opt input{width:auto}
+  .sub-detail{margin-top:8px;padding:10px 12px;background:var(--bg);border-radius:8px;display:none}
+  .sub-detail.show{display:block}
+  .btn{display:inline-block;border:none;border-radius:8px;font-weight:700;text-align:center;cursor:pointer;padding:13px 28px;font-size:1rem}
+  .btn-accent{background:var(--accent);color:#fff}
+  .btn-accent:hover{background:var(--accent-dark)}
+  .btn-outline{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  .btn-row{display:flex;gap:12px;justify-content:center;margin:28px 0;flex-wrap:wrap}
+  #result{display:none}
+  .result-section{margin-bottom:24px}
+  .result-section h3{font-size:.95rem;color:var(--blue);font-weight:800;margin-bottom:8px}
+  ul.checklist{list-style:none}
+  ul.checklist li{position:relative;padding:6px 0 6px 28px;font-size:.92rem;border-bottom:1px dashed var(--line)}
+  ul.checklist li::before{content:"☐";position:absolute;left:0;top:6px;color:var(--blue);font-size:1.1rem}
+  ul.qa{list-style:none}
+  ul.qa li{position:relative;padding:7px 0 7px 22px;font-size:.92rem;border-bottom:1px dashed var(--line)}
+  ul.qa li::before{content:"Q.";position:absolute;left:0;top:7px;color:var(--accent);font-weight:800;font-size:.85rem}
+  .tag-cat{display:inline-block;background:var(--blue);color:#fff;font-size:.68rem;padding:2px 8px;border-radius:10px;margin-right:8px;vertical-align:middle}
+  @media print{
+    header,.btn-row,.card.input-card{display:none}
+    body{background:#fff}
+    .card{box-shadow:none;border:1px solid #999}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div>
+      <h1>離婚事件 受任前ヒアリング支援ツール</h1>
+      <p>依頼者の前情報・意向を入力 → 必要書類チェックリストと聴取事項を自動生成</p>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="card input-card">
+    <h2>1. 基本情報</h2>
+    <div class="grid2">
+      <div class="field-wrap">
+        <label class="field">依頼者氏名</label>
+        <input type="text" id="clientName" placeholder="例）甲野花子">
+      </div>
+      <div class="field-wrap">
+        <label class="field">相手方氏名</label>
+        <input type="text" id="spouseName" placeholder="例）甲野太郎">
+      </div>
+      <div class="field-wrap">
+        <label class="field">婚姻日</label>
+        <input type="date" id="marriageDate">
+      </div>
+      <div class="field-wrap">
+        <label class="field">別居の有無</label>
+        <select id="separation">
+          <option value="none">同居中</option>
+          <option value="separated">別居中</option>
+        </select>
+      </div>
+      <div class="field-wrap" id="separationDateWrap" style="display:none">
+        <label class="field">別居開始日</label>
+        <input type="date" id="separationDate">
+      </div>
+      <div class="field-wrap">
+        <label class="field">未成年の子の有無</label>
+        <select id="hasChildren">
+          <option value="no">なし</option>
+          <option value="yes">あり</option>
+        </select>
+      </div>
+      <div class="field-wrap" id="childrenCountWrap" style="display:none">
+        <label class="field">子の人数</label>
+        <input type="number" id="childrenCount" min="1" value="1">
+      </div>
+    </div>
+
+    <h2 style="margin-top:8px">2. 争点・事情チェック</h2>
+
+    <fieldset>
+      <legend>離婚原因・事情</legend>
+      <div class="opt-row">
+        <label class="opt"><input type="checkbox" data-issue="infidelity"> 不貞行為（浮気・不倫）の疑い</label>
+        <label class="opt"><input type="checkbox" data-issue="dv"> DV・モラルハラスメント</label>
+        <label class="opt"><input type="checkbox" data-issue="abandonment"> 悪意の遺棄（生活費不払い・家出等）</label>
+        <label class="opt"><input type="checkbox" data-issue="personality"> 性格の不一致・価値観の相違</label>
+        <label class="opt"><input type="checkbox" data-issue="addiction"> 暴力・ギャンブル・アルコール等の問題行動</label>
+        <label class="opt"><input type="checkbox" data-issue="mental"> 強度の精神病・その他重大事由</label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>子に関する事項</legend>
+      <div class="opt-row">
+        <label class="opt"><input type="checkbox" data-issue="custody"> 親権を争う可能性</label>
+        <label class="opt"><input type="checkbox" data-issue="visitation"> 面会交流について調整が必要</label>
+        <label class="opt"><input type="checkbox" data-issue="support"> 養育費の取り決めが必要</label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>財産・お金に関する事項</legend>
+      <div class="opt-row">
+        <label class="opt"><input type="checkbox" data-issue="realestate"> 不動産（自宅等）を所有</label>
+        <label class="opt"><input type="checkbox" data-issue="savings"> 預貯金・証券等の資産あり</label>
+        <label class="opt"><input type="checkbox" data-issue="debt"> 夫婦の債務（ローン・借金）あり</label>
+        <label class="opt"><input type="checkbox" data-issue="business"> 自営業・会社経営に関する資産あり</label>
+        <label class="opt"><input type="checkbox" data-issue="pension"> 年金分割の希望</label>
+        <label class="opt"><input type="checkbox" data-issue="alimony"> 慰謝料を請求したい</label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>進め方・その他</legend>
+      <div class="opt-row">
+        <label class="opt"><input type="checkbox" data-issue="negotiation"> まずは協議で進めたい</label>
+        <label class="opt"><input type="checkbox" data-issue="mediation"> 調停を予定・検討している</label>
+        <label class="opt"><input type="checkbox" data-issue="litigation"> 訴訟（裁判）も視野に入れている</label>
+        <label class="opt"><input type="checkbox" data-issue="urgent"> 身の安全等、緊急対応が必要</label>
+      </div>
+    </fieldset>
+
+    <div class="btn-row">
+      <button class="btn btn-accent" onclick="generate()">チェックリスト・聴取事項を生成</button>
+      <button class="btn btn-outline" onclick="window.print()">印刷 / PDF保存</button>
+    </div>
+  </div>
+
+  <div id="result">
+    <div class="card">
+      <div id="summaryHead" style="margin-bottom:18px;font-size:.9rem;color:var(--muted)"></div>
+
+      <div class="result-section">
+        <h2>必要書類・資料チェックリスト</h2>
+        <ul class="checklist" id="docList"></ul>
+      </div>
+
+      <div class="result-section">
+        <h2>依頼者への聴取事項（ヒアリングシート）</h2>
+        <ul class="qa" id="qaList"></ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+document.getElementById('separation').addEventListener('change', function(){
+  document.getElementById('separationDateWrap').style.display = this.value === 'separated' ? 'block' : 'none';
+});
+document.getElementById('hasChildren').addEventListener('change', function(){
+  document.getElementById('childrenCountWrap').style.display = this.value === 'yes' ? 'block' : 'none';
+});
+
+function checked(issue){
+  return document.querySelector('input[data-issue="'+issue+'"]').checked;
+}
+
+function generate(){
+  const clientName = document.getElementById('clientName').value || '依頼者';
+  const spouseName = document.getElementById('spouseName').value || '相手方';
+  const separated = document.getElementById('separation').value === 'separated';
+  const hasChildren = document.getElementById('hasChildren').value === 'yes';
+
+  const docs = new Set();
+  const qas = [];
+
+  // ベース（全件共通）
+  docs.add('戸籍謄本（夫婦・子の記載があるもの）');
+  docs.add('住民票（依頼者・相手方）');
+  docs.add('依頼者の本人確認書類（運転免許証・マイナンバーカード等）');
+  docs.add('婚姻関係を裏付ける資料（結婚式・婚姻届の写し等、あれば）');
+
+  qas.push('結婚の経緯と、婚姻期間中の生活状況を教えてください。');
+  qas.push('離婚を考えるに至った主な経緯・きっかけは何ですか。');
+  qas.push('現在、相手方とは話し合いができる関係ですか（連絡可能か、弁護士が入ることへの反応等）。');
+  qas.push('離婚の方針として、まず協議・調停・訴訟のどれを希望しますか。');
+
+  if (separated) {
+    docs.add('別居の経緯・別居開始日を示す資料（賃貸契約書、転居の記録等）');
+    qas.push('別居開始日と、別居に至った経緯を教えてください。');
+    qas.push('別居後の生活費（婚姻費用）の負担状況はどうなっていますか。');
+  } else {
+    qas.push('現在同居中ですが、今後別居の予定はありますか（時期・方法）。');
+  }
+
+  if (hasChildren) {
+    docs.add('子の戸籍謄本・住民票（同居の有無を示す資料）');
+    qas.push('お子様の現在の年齢・就学状況・健康状態を教えてください。');
+    qas.push('お子様は現在どちらと同居していますか。');
+  }
+
+  if (checked('infidelity')) {
+    docs.add('不貞行為を示す証拠（写真・LINE等のメッセージ履歴・ホテルの利用記録・興信所調査報告書等）');
+    qas.push('不貞行為が発覚した経緯と時期、相手の素性が分かる情報を教えてください。');
+    qas.push('不貞行為を示す証拠（メッセージ、写真等）をすでにお持ちですか。');
+  }
+
+  if (checked('dv')) {
+    docs.add('DV・モラハラを示す証拠（診断書、写真、録音・録画データ、医療機関の受診記録等）');
+    docs.add('警察への相談・通報記録（あれば、相談票の写し等）');
+    qas.push('DV・モラハラの内容、発生時期・頻度・最近の状況を具体的に教えてください。');
+    qas.push('警察や医療機関に相談・受診したことはありますか。');
+    qas.push('現在、身の安全について不安はありますか（保護命令の検討要否）。');
+  }
+
+  if (checked('abandonment')) {
+    docs.add('生活費の不払いを示す資料（給与明細、振込記録、督促のやり取り等）');
+    qas.push('生活費が支払われなくなった時期と、その後の経緯を教えてください。');
+  }
+
+  if (checked('addiction')) {
+    qas.push('問題行動（暴力・ギャンブル・アルコール等）の具体的な内容と頻度、これまでの対応を教えてください。');
+  }
+
+  if (checked('custody')) {
+    qas.push('親権について、相手方の意向や監護に関する不安要素（虐待歴、養育環境等）はありますか。');
+    qas.push('現在の主たる監護者は誰ですか（保育園・学校への送迎、看病等の実績）。');
+  }
+
+  if (checked('visitation')) {
+    qas.push('面会交流について、希望する頻度・方法、注意すべき事情（DV歴等）はありますか。');
+  }
+
+  if (checked('support')) {
+    docs.add('依頼者・相手方双方の収入を示す資料（給与明細、源泉徴収票、確定申告書等）');
+    qas.push('養育費の算定に必要な、依頼者・相手方双方の年収・就労状況を教えてください。');
+    qas.push('希望する養育費の金額・支払方法（一括/分割）はありますか。');
+  }
+
+  if (checked('realestate')) {
+    docs.add('不動産の登記簿謄本（全部事項証明書）・固定資産評価証明書');
+    docs.add('不動産の購入時の契約書・ローン残高証明書');
+    qas.push('不動産（自宅等）の名義、購入時期・購入資金の出どころ、ローン残高を教えてください。');
+    qas.push('不動産の処分（売却・どちらかが住み続ける等）についてご希望はありますか。');
+  }
+
+  if (checked('savings')) {
+    docs.add('預貯金口座の取引履歴・残高証明書（婚姻時・別居時・現在）');
+    docs.add('証券・保険等の資産を示す資料');
+    qas.push('依頼者・相手方名義の預貯金、証券、保険等の資産状況（婚姻時・別居時点）を教えてください。');
+  }
+
+  if (checked('debt')) {
+    docs.add('債務に関する資料（ローン契約書、借入残高がわかる書面等）');
+    qas.push('夫婦の生活のために生じた債務（ローン・借金）の内容と残額を教えてください。');
+  }
+
+  if (checked('business')) {
+    docs.add('事業用資産・決算書・確定申告書（自営業・会社経営の場合）');
+    qas.push('事業・会社の資産（株式・出資、事業用不動産等）の状況を教えてください。');
+  }
+
+  if (checked('pension')) {
+    docs.add('年金分割のための情報通知書（年金事務所で取得）');
+    qas.push('年金分割の対象となる年金（厚生年金等）の加入状況を確認できますか。');
+  }
+
+  if (checked('alimony')) {
+    qas.push('慰謝料を請求する根拠となる事実（不貞・DV等）と、被った精神的苦痛の内容を具体的に教えてください。');
+    qas.push('希望する慰謝料の金額の目安はありますか。');
+  }
+
+  if (checked('negotiation')) {
+    qas.push('協議離婚を進める場合、相手方との連絡方法（直接/代理人経由）に希望はありますか。');
+  }
+
+  if (checked('mediation')) {
+    docs.add('調停申立てに必要な事情説明書記載事項の整理メモ');
+    qas.push('調停を申し立てる場合、希望する管轄裁判所（相手方の住所地等）を確認できますか。');
+  }
+
+  if (checked('litigation')) {
+    qas.push('訴訟になった場合の主張立証の見通しについて、現時点で把握している証拠関係を教えてください。');
+  }
+
+  if (checked('urgent')) {
+    qas.push('緊急性の高い事情（身の安全、子の引渡し等）があれば、最優先で対応すべき点を教えてください。');
+  }
+
+  // 出力
+  document.getElementById('summaryHead').textContent =
+    '依頼者：' + clientName + ' ／ 相手方：' + spouseName +
+    ' ／ ' + (separated ? '別居中' : '同居中') +
+    ' ／ 未成年の子：' + (hasChildren ? 'あり' : 'なし') +
+    ' ／ 作成日：' + new Date().toLocaleDateString('ja-JP');
+
+  const docList = document.getElementById('docList');
+  docList.innerHTML = '';
+  [...docs].forEach(d=>{
+    const li = document.createElement('li');
+    li.textContent = d;
+    docList.appendChild(li);
+  });
+
+  const qaList = document.getElementById('qaList');
+  qaList.innerHTML = '';
+  qas.forEach(q=>{
+    const li = document.createElement('li');
+    li.textContent = q;
+    qaList.appendChild(li);
+  });
+
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('result').scrollIntoView({behavior:'smooth'});
+}
+</script>
+
+</body>
+</html>
