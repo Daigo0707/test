@@ -81,6 +81,33 @@
 <div class="wrap">
 
   <div class="card input-card">
+    <h2>事件の保存・呼び出し</h2>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
+      入力内容・生成済み書面・相手方とのやり取りはブラウザ内（localStorage）に事件単位で保存できます。相手方からの回答が来た際は、保存済みの事件を呼び出してから「相手方からの回答」欄に進んでください。
+    </p>
+    <div class="grid2">
+      <div class="field-wrap">
+        <label class="field">事件名（保存用ラベル）</label>
+        <input type="text" id="caseLabel" placeholder="例）木村様（夫）離婚事件">
+      </div>
+      <div class="field-wrap">
+        <label class="field">保存済みの事件</label>
+        <select id="caseSelect"><option value="">-- 選択 --</option></select>
+      </div>
+    </div>
+    <div class="btn-row" style="margin:0 0 4px">
+      <button class="btn btn-accent" onclick="saveCase()">この内容で保存</button>
+      <button class="btn btn-outline" onclick="loadCase(document.getElementById('caseSelect').value)">選択した事件を読込</button>
+      <button class="btn btn-outline" onclick="deleteCase(document.getElementById('caseSelect').value)">選択した事件を削除</button>
+      <button class="btn btn-outline" onclick="newCase()">新規事件にする（入力クリア）</button>
+      <button class="btn btn-outline" onclick="exportCase()">JSONで書き出し</button>
+      <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">JSONから読込</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importCase(this.files[0])">
+    </div>
+    <div id="historyList" style="font-size:.85rem;color:var(--muted)"></div>
+  </div>
+
+  <div class="card input-card">
     <h2>0. 依頼者情報のまとめ入力（自由記述）</h2>
     <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
       聴取メモをそのまま貼り付けて「自動入力」を押すと、下記フォームにできるだけ反映します（反映後は必ず内容をご確認・修正してください）。
@@ -272,6 +299,33 @@
     </div>
   </div>
 
+  <div class="card input-card">
+    <h2>4. 相手方からの回答・反論書面の作成</h2>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
+      相手方代理人等からの回答を貼り付けて「回答を反映」を押すと、7項目ごとの相手方の立場を自動で下書きします（必ず内容を確認・修正してください）。修正後「反論書面を生成」を押すと、項目ごとの方針を踏まえた書面ドラフトを作成します。
+    </p>
+    <div class="field-wrap">
+      <textarea id="opponentText" rows="6" placeholder="例）離婚自体には応じる。慰謝料は争う。婚姻費用は月10万円なら応じる。親権は争わない。"></textarea>
+    </div>
+    <div class="btn-row" style="margin:0 0 12px">
+      <button class="btn btn-accent" onclick="parseOpponentText()">回答を反映</button>
+    </div>
+    <table class="points">
+      <thead><tr><th>項目</th><th>相手方の立場</th><th>補足（条件等）</th></tr></thead>
+      <tbody id="opponentBody"></tbody>
+    </table>
+    <div class="btn-row">
+      <button class="btn btn-accent" onclick="generateRebuttal()">反論書面を生成</button>
+    </div>
+    <div class="result-section" id="rebuttalWrap" style="display:none">
+      <h2>反論書面（ドラフト）</h2>
+      <div class="btn-row" style="margin:0 0 12px">
+        <button class="btn btn-outline" onclick="copyArea('rebuttalOut')">本文をコピー</button>
+      </div>
+      <textarea id="rebuttalOut" readonly></textarea>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -281,6 +335,303 @@ document.getElementById('separation').addEventListener('change', function(){
 document.getElementById('hasChildren').addEventListener('change', function(){
   document.getElementById('childrenCountWrap').style.display = this.value === 'yes' ? 'block' : 'none';
 });
+
+// ============ 事件の保存・呼び出し ============
+const FIELD_IDS = ['clientName','spouseName','marriageDate','separation','separationDate',
+  'hasChildren','childrenCount','spouseAddress','replyDays','livingExpenseAmount',
+  'childSupportAmount','alimonyAmount','propertyDivisionNote','firmName','lawyerName',
+  'firmContact','firmAddress','freeText','opponentText'];
+const ISSUE_KEYS = ['infidelity','dv','abandonment','personality','addiction','mental',
+  'custody','visitation','support','realestate','savings','debt','business','pension',
+  'alimony','negotiation','mediation','litigation','urgent'];
+const POINT_DEFS = [
+  {key:'divorce', label:'⑴ 離婚するか', keywordRe:/離婚/},
+  {key:'living', label:'⑵ 婚姻費用', keywordRe:/婚姻費用/},
+  {key:'support', label:'⑶ 養育費', keywordRe:/養育費/},
+  {key:'property', label:'⑷ 財産分与', keywordRe:/財産分与/},
+  {key:'alimony', label:'⑸ 慰謝料', keywordRe:/慰謝料/},
+  {key:'pension', label:'⑹ 年金分割', keywordRe:/年金分割/},
+  {key:'custody', label:'⑺ 親権', keywordRe:/親権/},
+];
+
+let currentCaseId = null;
+let caseHistory = [];
+
+function loadCaseStore(){
+  try { return JSON.parse(localStorage.getItem('divorceCases') || '{}'); }
+  catch(e) { return {}; }
+}
+function saveCaseStore(store){
+  localStorage.setItem('divorceCases', JSON.stringify(store));
+}
+
+function collectFormData(){
+  const data = {};
+  FIELD_IDS.forEach(id => { data[id] = document.getElementById(id).value; });
+  data.issues = {};
+  ISSUE_KEYS.forEach(k => { data.issues[k] = checked(k); });
+  data.opponentStatus = {};
+  data.opponentNote = {};
+  POINT_DEFS.forEach(p => {
+    const sel = document.getElementById('oppStatus_' + p.key);
+    const note = document.getElementById('oppNote_' + p.key);
+    if (sel) data.opponentStatus[p.key] = sel.value;
+    if (note) data.opponentNote[p.key] = note.value;
+  });
+  data.memoOut = document.getElementById('memoOut').value;
+  data.letterOut = document.getElementById('letterOut').value;
+  data.rebuttalOut = document.getElementById('rebuttalOut').value;
+  return data;
+}
+
+function applyFormData(data){
+  FIELD_IDS.forEach(id => { if (data[id] !== undefined) document.getElementById(id).value = data[id]; });
+  if (data.issues) ISSUE_KEYS.forEach(k => setIssue(k, !!data.issues[k]));
+  document.getElementById('separationDateWrap').style.display = data.separation === 'separated' ? 'block' : 'none';
+  document.getElementById('childrenCountWrap').style.display = data.hasChildren === 'yes' ? 'block' : 'none';
+  renderOpponentTable();
+  if (data.opponentStatus) POINT_DEFS.forEach(p => {
+    const sel = document.getElementById('oppStatus_' + p.key);
+    if (sel && data.opponentStatus[p.key] !== undefined) sel.value = data.opponentStatus[p.key];
+  });
+  if (data.opponentNote) POINT_DEFS.forEach(p => {
+    const note = document.getElementById('oppNote_' + p.key);
+    if (note && data.opponentNote[p.key] !== undefined) note.value = data.opponentNote[p.key];
+  });
+  document.getElementById('memoOut').value = data.memoOut || '';
+  document.getElementById('letterOut').value = data.letterOut || '';
+  document.getElementById('rebuttalOut').value = data.rebuttalOut || '';
+  document.getElementById('result').style.display = data.letterOut ? 'block' : 'none';
+  document.getElementById('rebuttalWrap').style.display = data.rebuttalOut ? 'block' : 'none';
+}
+
+function addHistory(label){
+  caseHistory.push({ time: new Date().toLocaleString('ja-JP'), label: label });
+  renderHistory();
+}
+
+function renderHistory(){
+  const wrap = document.getElementById('historyList');
+  if (!caseHistory.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = '<strong style="color:var(--navy)">経過記録：</strong><ul style="margin-top:6px">' +
+    caseHistory.map(h => '<li>' + h.time + '　' + h.label + '</li>').join('') + '</ul>';
+}
+
+function refreshCaseSelect(){
+  const store = loadCaseStore();
+  const sel = document.getElementById('caseSelect');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">-- 選択 --</option>';
+  Object.keys(store).forEach(id => {
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = store[id].label + '（' + store[id].savedAt + '）';
+    sel.appendChild(opt);
+  });
+  if (store[prev]) sel.value = prev;
+}
+
+function saveCase(){
+  const label = document.getElementById('caseLabel').value.trim();
+  if (!label) { alert('事件名を入力してください。'); return; }
+  if (!currentCaseId) currentCaseId = 'case_' + Date.now();
+  const store = loadCaseStore();
+  store[currentCaseId] = {
+    label: label,
+    savedAt: new Date().toLocaleString('ja-JP'),
+    data: collectFormData(),
+    history: caseHistory,
+  };
+  saveCaseStore(store);
+  refreshCaseSelect();
+  document.getElementById('caseSelect').value = currentCaseId;
+  alert('保存しました。');
+}
+
+function loadCase(caseId){
+  if (!caseId) return;
+  const store = loadCaseStore();
+  const c = store[caseId];
+  if (!c) return;
+  currentCaseId = caseId;
+  document.getElementById('caseLabel').value = c.label;
+  applyFormData(c.data || {});
+  caseHistory = c.history || [];
+  renderHistory();
+}
+
+function deleteCase(caseId){
+  if (!caseId) return;
+  if (!confirm('選択した事件を削除します。よろしいですか？')) return;
+  const store = loadCaseStore();
+  delete store[caseId];
+  saveCaseStore(store);
+  if (currentCaseId === caseId) newCase();
+  refreshCaseSelect();
+}
+
+function newCase(){
+  currentCaseId = null;
+  caseHistory = [];
+  document.getElementById('caseLabel').value = '';
+  FIELD_IDS.forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('separation').value = 'none';
+  document.getElementById('hasChildren').value = 'no';
+  document.getElementById('separationDateWrap').style.display = 'none';
+  document.getElementById('childrenCountWrap').style.display = 'none';
+  ISSUE_KEYS.forEach(k => setIssue(k, false));
+  renderOpponentTable();
+  document.getElementById('memoOut').value = '';
+  document.getElementById('letterOut').value = '';
+  document.getElementById('rebuttalOut').value = '';
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('rebuttalWrap').style.display = 'none';
+  renderHistory();
+  document.getElementById('caseSelect').value = '';
+}
+
+function exportCase(){
+  const label = document.getElementById('caseLabel').value.trim() || '無題の事件';
+  const payload = { label: label, savedAt: new Date().toLocaleString('ja-JP'), data: collectFormData(), history: caseHistory };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = label + '.json';
+  a.click();
+}
+
+function importCase(file){
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(){
+    try {
+      const payload = JSON.parse(reader.result);
+      currentCaseId = 'case_' + Date.now();
+      document.getElementById('caseLabel').value = payload.label || '';
+      applyFormData(payload.data || {});
+      caseHistory = payload.history || [];
+      renderHistory();
+      const store = loadCaseStore();
+      store[currentCaseId] = { label: payload.label || '無題の事件', savedAt: new Date().toLocaleString('ja-JP'), data: payload.data || {}, history: caseHistory };
+      saveCaseStore(store);
+      refreshCaseSelect();
+      document.getElementById('caseSelect').value = currentCaseId;
+    } catch(e) {
+      alert('JSONの読み込みに失敗しました。');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ============ 相手方からの回答・反論書面 ============
+function renderOpponentTable(){
+  const body = document.getElementById('opponentBody');
+  body.innerHTML = '';
+  POINT_DEFS.forEach(p => {
+    const tr = document.createElement('tr');
+    const th = document.createElement('th');
+    th.textContent = p.label;
+    const tdStatus = document.createElement('td');
+    const sel = document.createElement('select');
+    sel.id = 'oppStatus_' + p.key;
+    [['unknown','未確認'],['agree','同意'],['dispute','争う'],['conditional','条件付で応じる']].forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o[0]; opt.textContent = o[1];
+      sel.appendChild(opt);
+    });
+    tdStatus.appendChild(sel);
+    const tdNote = document.createElement('td');
+    const note = document.createElement('input');
+    note.type = 'text';
+    note.id = 'oppNote_' + p.key;
+    note.placeholder = '例）月10万円なら応じる';
+    tdNote.appendChild(note);
+    tr.appendChild(th); tr.appendChild(tdStatus); tr.appendChild(tdNote);
+    body.appendChild(tr);
+  });
+}
+
+function parseOpponentText(){
+  const text = document.getElementById('opponentText').value;
+  if (!text.trim()) return;
+  // 文単位で区切ってから争点語を探すことで、隣接する別の文の語句（同意/争う等）を
+  // 誤って取り込まないようにする
+  const sentences = text.split(/(?<=[。\n])/).filter(s => s.trim());
+  const disputeRe = /争う(?!.{0,3}ない)|拒否|反対|応じない|認めない|不同意/;
+  const agreeRe = /同意|応じ(る|ます)|異議(は)?ない|認める|了承|問題ない|争わない/;
+
+  POINT_DEFS.forEach(p => {
+    const sentence = sentences.find(s => p.keywordRe.test(s));
+    if (!sentence) return;
+    const isDispute = disputeRe.test(sentence);
+    const isAgree = agreeRe.test(sentence);
+    let status = 'unknown';
+    if (isDispute && isAgree) status = 'conditional';
+    else if (isDispute) status = 'dispute';
+    else if (isAgree) status = 'agree';
+    const sel = document.getElementById('oppStatus_' + p.key);
+    if (sel) sel.value = status;
+  });
+  addHistory('相手方からの回答を反映');
+}
+
+function generateRebuttal(){
+  const clientName = document.getElementById('clientName').value || '依頼者';
+  const spouseName = document.getElementById('spouseName').value || '相手方';
+  const replyDays = document.getElementById('replyDays').value || '14';
+  const today = new Date().toLocaleDateString('ja-JP');
+
+  const STATUS_TEXT = {
+    agree: function(p){ return p.label + 'については、貴殿のご回答内容で異議ございません。今後、具体的な取り決め内容を確定させていただきたく存じます。'; },
+    dispute: function(p){ return p.label + 'について争うとのご回答ですが、依頼者の主張は従前のとおりであり、撤回いたしません。貴殿のご主張の根拠（具体的事実・証拠）をご教示いただいた上で、改めて協議させていただきたく存じます。'; },
+    conditional: function(p){ return p.label + 'について条件付きでのご回答をいただきましたが、その条件の当否については検討の上、別途回答いたします。'; },
+    unknown: function(p){ return p.label + 'につきましては、貴殿のご意向が明らかでないため、改めてご回答をお願いいたします。'; },
+  };
+
+  const lines = [];
+  lines.push(today);
+  lines.push('');
+  lines.push(document.getElementById('spouseAddress').value || '（送付先住所未記入）');
+  lines.push(spouseName + '　様');
+  lines.push('');
+  lines.push(document.getElementById('firmAddress').value || '（事務所住所未記入）');
+  lines.push(document.getElementById('firmName').value || '○○法律事務所');
+  lines.push(document.getElementById('lawyerName').value || '弁護士　○○　○○');
+  lines.push(document.getElementById('firmContact').value || 'TEL ○○-○○○○-○○○○');
+  lines.push('');
+  lines.push('　　　　　　　　　　　　　　　　回　答　書（反論）');
+  lines.push('');
+  lines.push('前略　貴殿よりいただきましたご回答につき、依頼者' + clientName + 'の代理人として、以下のとおり回答いたします。');
+  lines.push('');
+
+  let sec = 1;
+  POINT_DEFS.forEach(p => {
+    const status = (document.getElementById('oppStatus_' + p.key) || {}).value || 'unknown';
+    const note = (document.getElementById('oppNote_' + p.key) || {}).value || '';
+    lines.push('第' + sec + '　' + p.label);
+    lines.push(STATUS_TEXT[status](p) + (note ? '（相手方提示内容：' + note + '）' : ''));
+    lines.push('');
+    sec++;
+  });
+
+  lines.push('以上につきまして、本書面到達後' + replyDays + '日以内に、再度ご回答くださいますようお願い申し上げます。');
+  lines.push('期間内に誠意あるご回答をいただけない場合には、家庭裁判所への調停申立て等、法的手続に移行させていただく場合がございますので、あらかじめご了承おきください。');
+  lines.push('');
+  lines.push('草々');
+
+  document.getElementById('rebuttalOut').value = lines.join('\n');
+  document.getElementById('rebuttalWrap').style.display = 'block';
+  document.getElementById('rebuttalWrap').scrollIntoView({behavior:'smooth'});
+  addHistory('反論書面を生成');
+  if (currentCaseId) {
+    const store = loadCaseStore();
+    if (store[currentCaseId]) {
+      store[currentCaseId].data = collectFormData();
+      store[currentCaseId].history = caseHistory;
+      saveCaseStore(store);
+    }
+  }
+}
 
 function checked(issue){
   return document.querySelector('input[data-issue="'+issue+'"]').checked;
@@ -745,6 +1096,16 @@ function generate(){
 
   document.getElementById('result').style.display = 'block';
   document.getElementById('result').scrollIntoView({behavior:'smooth'});
+
+  addHistory('チェックリスト・聴取事項・請求書面を生成');
+  if (currentCaseId) {
+    const store = loadCaseStore();
+    if (store[currentCaseId]) {
+      store[currentCaseId].data = collectFormData();
+      store[currentCaseId].history = caseHistory;
+      saveCaseStore(store);
+    }
+  }
 }
 
 function copyArea(id){
@@ -752,6 +1113,10 @@ function copyArea(id){
   el.select();
   document.execCommand('copy');
 }
+
+renderOpponentTable();
+refreshCaseSelect();
+renderHistory();
 </script>
 
 </body>
