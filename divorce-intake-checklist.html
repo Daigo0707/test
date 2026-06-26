@@ -59,6 +59,21 @@
   table.points th{background:var(--bg);color:var(--navy);font-weight:800;width:9.5em}
   table.points td.status-claim{color:var(--accent-dark);font-weight:700}
   table.points td.status-na{color:#9aa6b2}
+  table.dash{width:100%;border-collapse:collapse;font-size:.86rem}
+  table.dash th,table.dash td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  table.dash th{background:var(--bg);color:var(--navy);font-weight:800}
+  table.dash tr.deadline-over td{background:#fdecea}
+  table.dash tr.deadline-soon td{background:#fff6e0}
+  .badge{display:inline-block;font-size:.72rem;font-weight:700;padding:2px 9px;border-radius:10px;color:#fff}
+  .badge-negotiating{background:var(--blue)}
+  .badge-waiting{background:var(--accent)}
+  .badge-mediation{background:#7a52c9}
+  .badge-litigation{background:#b3392c}
+  .badge-settled{background:#2f9e5b}
+  .badge-closed{background:#8a939c}
+  .deadline-text-over{color:#b3392c;font-weight:800}
+  .deadline-text-soon{color:var(--accent-dark);font-weight:800}
+  .row-link{cursor:pointer;color:var(--blue);text-decoration:underline}
   textarea#letterOut,textarea#memoOut{width:100%;min-height:420px;font-size:.86rem;line-height:1.9;padding:18px;border:1px solid var(--line);border-radius:8px;white-space:pre-wrap}
   @media print{
     header,.btn-row,.card.input-card{display:none}
@@ -81,6 +96,19 @@
 <div class="wrap">
 
   <div class="card input-card">
+    <h2>事件一覧・進捗管理</h2>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
+      保存済みの全事件をステータス・次回対応期限の観点で一覧表示します。期限切れ・期限間近の事件は色付けして表示されます。事件名をクリックすると読込みます。
+    </p>
+    <div style="overflow-x:auto">
+      <table class="dash">
+        <thead><tr><th>事件名</th><th>ステータス</th><th>次回対応期限</th><th>最終更新</th><th>直近の対応</th></tr></thead>
+        <tbody id="dashboardBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card input-card">
     <h2>事件の保存・呼び出し</h2>
     <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
       入力内容・生成済み書面・相手方とのやり取りはブラウザ内（localStorage）に事件単位で保存できます。相手方からの回答が来た際は、保存済みの事件を呼び出してから「相手方からの回答」欄に進んでください。
@@ -93,6 +121,21 @@
       <div class="field-wrap">
         <label class="field">保存済みの事件</label>
         <select id="caseSelect"><option value="">-- 選択 --</option></select>
+      </div>
+      <div class="field-wrap">
+        <label class="field">進捗ステータス</label>
+        <select id="caseStatus">
+          <option value="negotiating">交渉中</option>
+          <option value="waiting">相手方回答待ち</option>
+          <option value="mediation">調停</option>
+          <option value="litigation">訴訟</option>
+          <option value="settled">示談・合意成立</option>
+          <option value="closed">終了</option>
+        </select>
+      </div>
+      <div class="field-wrap">
+        <label class="field">次回対応期限</label>
+        <input type="date" id="nextDeadline">
       </div>
     </div>
     <div class="btn-row" style="margin:0 0 4px">
@@ -324,6 +367,19 @@
       </div>
       <textarea id="rebuttalOut" readonly></textarea>
     </div>
+
+    <div class="result-section" id="negotiationLogWrap" style="display:none">
+      <h2>金額交渉の経過</h2>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
+        「相手方からの回答を反映」「反論書面を生成」のたびに、その時点の請求額・相手方提示額（補足欄の記載）を記録します。
+      </p>
+      <div style="overflow-x:auto">
+        <table class="dash">
+          <thead><tr><th>時点</th><th>婚姻費用</th><th>養育費</th><th>慰謝料</th></tr></thead>
+          <tbody id="negotiationLogBody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -340,7 +396,11 @@ document.getElementById('hasChildren').addEventListener('change', function(){
 const FIELD_IDS = ['clientName','spouseName','marriageDate','separation','separationDate',
   'hasChildren','childrenCount','spouseAddress','replyDays','livingExpenseAmount',
   'childSupportAmount','alimonyAmount','propertyDivisionNote','firmName','lawyerName',
-  'firmContact','firmAddress','freeText','opponentText'];
+  'firmContact','firmAddress','freeText','opponentText','caseStatus','nextDeadline'];
+const STATUS_LABELS = {
+  negotiating: '交渉中', waiting: '相手方回答待ち', mediation: '調停',
+  litigation: '訴訟', settled: '示談・合意成立', closed: '終了',
+};
 const ISSUE_KEYS = ['infidelity','dv','abandonment','personality','addiction','mental',
   'custody','visitation','support','realestate','savings','debt','business','pension',
   'alimony','negotiation','mediation','litigation','urgent'];
@@ -356,6 +416,7 @@ const POINT_DEFS = [
 
 let currentCaseId = null;
 let caseHistory = [];
+let negotiationLog = [];
 
 function loadCaseStore(){
   try { return JSON.parse(localStorage.getItem('divorceCases') || '{}'); }
@@ -410,11 +471,97 @@ function addHistory(label){
   renderHistory();
 }
 
+function addNegotiationSnapshot(label){
+  negotiationLog.push({
+    time: new Date().toLocaleString('ja-JP'),
+    label: label,
+    living: document.getElementById('livingExpenseAmount').value || '',
+    livingNote: (document.getElementById('oppNote_living') || {}).value || '',
+    support: document.getElementById('childSupportAmount').value || '',
+    supportNote: (document.getElementById('oppNote_support') || {}).value || '',
+    alimony: document.getElementById('alimonyAmount').value || '',
+    alimonyNote: (document.getElementById('oppNote_alimony') || {}).value || '',
+  });
+  renderNegotiationLog();
+}
+
+function renderNegotiationLog(){
+  const wrap = document.getElementById('negotiationLogWrap');
+  const body = document.getElementById('negotiationLogBody');
+  if (!negotiationLog.length) { wrap.style.display = 'none'; body.innerHTML = ''; return; }
+  wrap.style.display = 'block';
+  const cell = (amount, note) => {
+    let s = amount ? '依頼者：' + amount : '';
+    if (note) s += (s ? '<br>' : '') + '相手方：' + note;
+    return s || '－';
+  };
+  body.innerHTML = negotiationLog.map(n =>
+    '<tr><th style="width:14em;background:var(--bg)">' + n.time + '　' + n.label + '</th>' +
+    '<td>' + cell(n.living, n.livingNote) + '</td>' +
+    '<td>' + cell(n.support, n.supportNote) + '</td>' +
+    '<td>' + cell(n.alimony, n.alimonyNote) + '</td></tr>'
+  ).join('');
+}
+
 function renderHistory(){
   const wrap = document.getElementById('historyList');
   if (!caseHistory.length) { wrap.innerHTML = ''; return; }
   wrap.innerHTML = '<strong style="color:var(--navy)">経過記録：</strong><ul style="margin-top:6px">' +
     caseHistory.map(h => '<li>' + h.time + '　' + h.label + '</li>').join('') + '</ul>';
+}
+
+function renderDashboard(){
+  const store = loadCaseStore();
+  const body = document.getElementById('dashboardBody');
+  const ids = Object.keys(store);
+  if (!ids.length) { body.innerHTML = '<tr><td colspan="5" style="color:var(--muted)">保存済みの事件はまだありません。</td></tr>'; return; }
+
+  const todayStr = new Date().toISOString().slice(0,10);
+  const soonLimit = new Date();
+  soonLimit.setDate(soonLimit.getDate() + 3);
+  const soonStr = soonLimit.toISOString().slice(0,10);
+
+  const rows = ids.map(id => {
+    const c = store[id];
+    const d = c.data || {};
+    const status = d.caseStatus || 'negotiating';
+    const deadline = d.nextDeadline || '';
+    const hist = c.history || [];
+    const lastAction = hist.length ? hist[hist.length - 1] : null;
+    let deadlineClass = '';
+    let deadlineTextClass = '';
+    if (deadline && status !== 'settled' && status !== 'closed') {
+      if (deadline < todayStr) { deadlineClass = 'deadline-over'; deadlineTextClass = 'deadline-text-over'; }
+      else if (deadline <= soonStr) { deadlineClass = 'deadline-soon'; deadlineTextClass = 'deadline-text-soon'; }
+    }
+    return { id, c, deadline, deadlineClass, deadlineTextClass, status, lastAction };
+  });
+
+  // 期限が近い（または超過の）事件を上位に表示
+  rows.sort((a, b) => {
+    if (a.deadline && b.deadline) return a.deadline < b.deadline ? -1 : a.deadline > b.deadline ? 1 : 0;
+    if (a.deadline) return -1;
+    if (b.deadline) return 1;
+    return 0;
+  });
+
+  body.innerHTML = rows.map(r => {
+    const badge = '<span class="badge badge-' + r.status + '">' + (STATUS_LABELS[r.status] || r.status) + '</span>';
+    const deadlineText = r.deadline ? '<span class="' + r.deadlineTextClass + '">' + r.deadline + (r.deadlineClass === 'deadline-over' ? '（期限超過）' : r.deadlineClass === 'deadline-soon' ? '（期限間近）' : '') + '</span>' : '－';
+    const lastActionText = r.lastAction ? r.lastAction.time + '　' + r.lastAction.label : '－';
+    return '<tr class="' + r.deadlineClass + '">' +
+      '<td><span class="row-link" onclick="loadCaseFromDashboard(\'' + r.id + '\')">' + (r.c.label || '無題の事件') + '</span></td>' +
+      '<td>' + badge + '</td>' +
+      '<td>' + deadlineText + '</td>' +
+      '<td>' + (r.c.savedAt || '－') + '</td>' +
+      '<td>' + lastActionText + '</td></tr>';
+  }).join('');
+}
+
+function loadCaseFromDashboard(caseId){
+  document.getElementById('caseSelect').value = caseId;
+  loadCase(caseId);
+  document.getElementById('caseLabel').closest('.card').scrollIntoView({behavior:'smooth'});
 }
 
 function refreshCaseSelect(){
@@ -441,9 +588,11 @@ function saveCase(){
     savedAt: new Date().toLocaleString('ja-JP'),
     data: collectFormData(),
     history: caseHistory,
+    negotiationLog: negotiationLog,
   };
   saveCaseStore(store);
   refreshCaseSelect();
+  renderDashboard();
   document.getElementById('caseSelect').value = currentCaseId;
   alert('保存しました。');
 }
@@ -457,7 +606,9 @@ function loadCase(caseId){
   document.getElementById('caseLabel').value = c.label;
   applyFormData(c.data || {});
   caseHistory = c.history || [];
+  negotiationLog = c.negotiationLog || [];
   renderHistory();
+  renderNegotiationLog();
 }
 
 function deleteCase(caseId){
@@ -468,15 +619,18 @@ function deleteCase(caseId){
   saveCaseStore(store);
   if (currentCaseId === caseId) newCase();
   refreshCaseSelect();
+  renderDashboard();
 }
 
 function newCase(){
   currentCaseId = null;
   caseHistory = [];
+  negotiationLog = [];
   document.getElementById('caseLabel').value = '';
   FIELD_IDS.forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('separation').value = 'none';
   document.getElementById('hasChildren').value = 'no';
+  document.getElementById('caseStatus').value = 'negotiating';
   document.getElementById('separationDateWrap').style.display = 'none';
   document.getElementById('childrenCountWrap').style.display = 'none';
   ISSUE_KEYS.forEach(k => setIssue(k, false));
@@ -487,12 +641,13 @@ function newCase(){
   document.getElementById('result').style.display = 'none';
   document.getElementById('rebuttalWrap').style.display = 'none';
   renderHistory();
+  renderNegotiationLog();
   document.getElementById('caseSelect').value = '';
 }
 
 function exportCase(){
   const label = document.getElementById('caseLabel').value.trim() || '無題の事件';
-  const payload = { label: label, savedAt: new Date().toLocaleString('ja-JP'), data: collectFormData(), history: caseHistory };
+  const payload = { label: label, savedAt: new Date().toLocaleString('ja-JP'), data: collectFormData(), history: caseHistory, negotiationLog: negotiationLog };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -510,11 +665,14 @@ function importCase(file){
       document.getElementById('caseLabel').value = payload.label || '';
       applyFormData(payload.data || {});
       caseHistory = payload.history || [];
+      negotiationLog = payload.negotiationLog || [];
       renderHistory();
+      renderNegotiationLog();
       const store = loadCaseStore();
-      store[currentCaseId] = { label: payload.label || '無題の事件', savedAt: new Date().toLocaleString('ja-JP'), data: payload.data || {}, history: caseHistory };
+      store[currentCaseId] = { label: payload.label || '無題の事件', savedAt: new Date().toLocaleString('ja-JP'), data: payload.data || {}, history: caseHistory, negotiationLog: negotiationLog };
       saveCaseStore(store);
       refreshCaseSelect();
+      renderDashboard();
       document.getElementById('caseSelect').value = currentCaseId;
     } catch(e) {
       alert('JSONの読み込みに失敗しました。');
@@ -593,6 +751,17 @@ function parseOpponentText(){
     if (sel) sel.value = status;
   });
   addHistory('相手方からの回答を反映');
+  addNegotiationSnapshot('相手方回答を反映');
+  if (currentCaseId) {
+    const store = loadCaseStore();
+    if (store[currentCaseId]) {
+      store[currentCaseId].data = collectFormData();
+      store[currentCaseId].history = caseHistory;
+      store[currentCaseId].negotiationLog = negotiationLog;
+      saveCaseStore(store);
+      renderDashboard();
+    }
+  }
 }
 
 function generateRebuttal(){
@@ -643,12 +812,15 @@ function generateRebuttal(){
   document.getElementById('rebuttalWrap').style.display = 'block';
   document.getElementById('rebuttalWrap').scrollIntoView({behavior:'smooth'});
   addHistory('反論書面を生成');
+  addNegotiationSnapshot('反論書面を生成');
   if (currentCaseId) {
     const store = loadCaseStore();
     if (store[currentCaseId]) {
       store[currentCaseId].data = collectFormData();
       store[currentCaseId].history = caseHistory;
+      store[currentCaseId].negotiationLog = negotiationLog;
       saveCaseStore(store);
+      renderDashboard();
     }
   }
 }
@@ -1124,12 +1296,15 @@ function generate(){
   document.getElementById('result').scrollIntoView({behavior:'smooth'});
 
   addHistory('チェックリスト・聴取事項・請求書面を生成');
+  addNegotiationSnapshot('初回請求書面を生成');
   if (currentCaseId) {
     const store = loadCaseStore();
     if (store[currentCaseId]) {
       store[currentCaseId].data = collectFormData();
       store[currentCaseId].history = caseHistory;
+      store[currentCaseId].negotiationLog = negotiationLog;
       saveCaseStore(store);
+      renderDashboard();
     }
   }
 }
@@ -1143,6 +1318,8 @@ function copyArea(id){
 renderOpponentTable();
 refreshCaseSelect();
 renderHistory();
+renderNegotiationLog();
+renderDashboard();
 </script>
 
 </body>
