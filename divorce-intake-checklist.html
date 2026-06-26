@@ -681,11 +681,17 @@ function parseFreeText(){
   function extractByLabels(labelAlt){
     // 「（妻）」「(夫)」のような性別・属性の注記としての使用は除外し、
     // ラベルが名前を導入する用法（直後にコロン・括弧・名前が続く）のみ採用する。
-    const re = new RegExp('(?:' + labelAlt + ')[:：]?\\s*' + NOT_PARTICLE + '(' + NAME_CHARS + '{1,10})');
+    const re = new RegExp('(?:' + labelAlt + ')[:：]?\\s*' + NOT_PARTICLE + '(' + NAME_CHARS + '{1,8})');
     const m = text.match(re);
     if (!m) return '';
-    const cand = m[1];
+    let cand = m[1];
     if (GENERIC_WORDS.includes(cand)) return '';
+    // 「木村　美穂」のように姓と名の間に（全角）スペースが入る表記にも対応する。
+    // 直後の語が漢字・かな等のみで、かつその後に明確な区切り（句読点・括弧・さん／様・文末）が
+    // 続く場合に限り、姓に続く「名」として連結する（無関係な後続文への暴走を防ぐ）。
+    const rest = text.slice(m.index + m[0].length);
+    const givenMatch = rest.match(/^[ 　]([一-龠ぁ-んァ-ヶー]{1,8})(?=[、。\n（(:：]|さん|様|$)/);
+    if (givenMatch) cand += '　' + givenMatch[1];
     return cand;
   }
 
