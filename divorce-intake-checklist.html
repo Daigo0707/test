@@ -302,28 +302,54 @@ function parseFreeText(){
   const text = document.getElementById('freeText').value;
   if (!text.trim()) return;
 
-  const nameMatch1 = text.match(/依頼者[:：]?\s*([^\s　、。\n]+)/);
-  const nameMatch2 = text.match(/相手方[:：]?\s*([^\s　、。\n]+)/);
-  if (nameMatch1) document.getElementById('clientName').value = nameMatch1[1];
-  if (nameMatch2) document.getElementById('spouseName').value = nameMatch2[1];
+  // 名前として使えない文字（区切り記号・括弧）
+  const NAME_CHARS = '[^\\s　、。\\/／\\n（）()｟｠]';
+  const NOT_PARTICLE = '(?!は|が|の|を|も|で|と|に|から|まで|という|らしい|って|だ|です)';
+  const GENERIC_WORDS = ['奥','旦那','相手','本人','相談者','クライアント','夫','妻','依頼者'];
 
-  const marriageMatch = text.match(/婚姻[日)）]*[:：]?\s*([0-9０-９年月日\/\-]+)/);
+  function extractByLabels(labelAlt){
+    const re = new RegExp('(?:' + labelAlt + ')[)）:：]?\\s*' + NOT_PARTICLE + '(' + NAME_CHARS + '{1,10})');
+    const m = text.match(re);
+    if (!m) return '';
+    const cand = m[1];
+    if (GENERIC_WORDS.includes(cand)) return '';
+    return cand;
+  }
+
+  let clientName = extractByLabels('依頼者|相談者|クライアント');
+  let spouseName = extractByLabels('相手方|相手|旦那|夫|妻|奥さん');
+
+  if (!clientName) {
+    // ラベルが無い場合、最初の「○○さん／○○様」をクライアント名候補とする
+    const sanRe = new RegExp('(' + NAME_CHARS + '{1,8})(?:さん|様)');
+    const m = text.match(sanRe);
+    if (m && !GENERIC_WORDS.includes(m[1])) clientName = m[1];
+  }
+
+  if (clientName) document.getElementById('clientName').value = clientName;
+  if (spouseName) document.getElementById('spouseName').value = spouseName;
+
+  const marriageMatch = text.match(/婚姻[日)）]*[:：]?\s*([0-9０-９Ｈ-Ｒ年号RH令和平成\/\.\-]+)/);
   const marriageIso = marriageMatch ? toIsoDate(marriageMatch[1]) : '';
   if (marriageIso) document.getElementById('marriageDate').value = marriageIso;
 
-  const separated = /別居中|別居して/.test(text);
+  // 「別居してない／していない」等の否定表現を優先して判定
+  const separationNegative = /別居[:：]?(?:して)?(?:い)?ない|まだ同居|同居中/.test(text);
+  const separationPositive = /別居中|別居している|別居開始|別居[:：]?して/.test(text);
+  const separated = separationPositive && !separationNegative;
   document.getElementById('separation').value = separated ? 'separated' : 'none';
   document.getElementById('separationDateWrap').style.display = separated ? 'block' : 'none';
   if (separated) {
-    const sepMatch = text.match(/別居[^0-9]{0,6}([0-9０-９年月日\/\-]{6,})/);
+    const sepMatch = text.match(/別居[^0-9０-９]{0,8}([0-9０-９Ｈ-Ｒ年号RH令和平成\/\.\-~〜]{4,})/);
     const sepIso = sepMatch ? toIsoDate(sepMatch[1]) : '';
     if (sepIso) document.getElementById('separationDate').value = sepIso;
   }
 
-  const hasChildrenMatch = /子[はが：:]?\s*(\d+|[一二三四五六七八九])\s*人|子.*あり|子供.*いる|子.*いる/.test(text) && !/子.*いない|子.*なし/.test(text);
+  const childrenNegative = /子.*いない|子.*なし|子.*成人/.test(text);
+  const hasChildrenMatch = !childrenNegative && /(?:子供|こども|子)[はがのもで：:]?\s*(?:\d+|[一二三四五六七八九])\s*人|子.*あり|子供.*いる|子.*未成年/.test(text);
   document.getElementById('hasChildren').value = hasChildrenMatch ? 'yes' : 'no';
   document.getElementById('childrenCountWrap').style.display = hasChildrenMatch ? 'block' : 'none';
-  const countMatch = text.match(/子[はが：:]?\s*(\d+)\s*人/);
+  const countMatch = text.match(/(?:子供|こども|子)[^\d]{0,4}(\d+)\s*人/);
   if (countMatch) document.getElementById('childrenCount').value = countMatch[1];
 
   const kw = (re) => re.test(text);
