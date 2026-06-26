@@ -424,6 +424,44 @@
     </div>
   </div>
 
+  <div class="card input-card" id="section-documents">
+    <h2>送付・受信書面の保管庫</h2>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
+      当方から送付した書面（初回請求書面・反論書面・協議書案）は生成時に自動で保管されます。相手方から受け取った書面は、本文を貼り付けて「保管庫に保存」を押すと、いつでも内容を呼び出せます。
+    </p>
+    <div class="field-wrap">
+      <label>区分</label>
+      <select id="docArchDirection">
+        <option value="sent">送付（当方→相手方）</option>
+        <option value="received">受信（相手方→当方）</option>
+      </select>
+    </div>
+    <div class="field-wrap">
+      <label>書面名</label>
+      <input type="text" id="docArchTitle" placeholder="例）相手方代理人からの回答書（第1回）">
+    </div>
+    <div class="field-wrap">
+      <textarea id="docArchText" rows="6" placeholder="書面の本文を貼り付けてください"></textarea>
+    </div>
+    <div class="btn-row" style="margin:0 0 12px">
+      <button class="btn btn-accent" onclick="manualAddDocumentArchive()">保管庫に保存</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="dash">
+        <thead><tr><th>日時</th><th>区分</th><th>書面名</th><th></th></tr></thead>
+        <tbody id="documentArchiveBody"></tbody>
+      </table>
+    </div>
+    <div class="result-section" id="docArchiveViewWrap" style="display:none">
+      <h2 id="docArchiveViewTitle">書面の内容</h2>
+      <div class="btn-row" style="margin:0 0 12px">
+        <button class="btn btn-outline" onclick="copyArea('docArchiveViewOut')">本文をコピー</button>
+        <button class="btn btn-outline" onclick="downloadAsWord('docArchiveViewOut','書面.doc')">Wordで保存</button>
+      </div>
+      <textarea id="docArchiveViewOut" readonly></textarea>
+    </div>
+  </div>
+
   <div class="card input-card" id="section-agreement">
     <h2>5. 示談・離婚協議書（案）の作成</h2>
     <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
@@ -477,7 +515,56 @@ const POINT_DEFS = [
 let currentCaseId = null;
 let caseHistory = [];
 let negotiationLog = [];
+let documentArchive = [];
 let docTasks = {};
+
+function addDocumentArchive(direction, title, text){
+  if (!text || !text.trim()) return;
+  documentArchive.push({ time: new Date().toLocaleString('ja-JP'), direction: direction, title: title, text: text });
+  renderDocumentArchive();
+}
+
+function manualAddDocumentArchive(){
+  const direction = document.getElementById('docArchDirection').value;
+  const title = document.getElementById('docArchTitle').value.trim() || '無題の書面';
+  const text = document.getElementById('docArchText').value;
+  if (!text.trim()) { alert('書面の本文を貼り付けてください。'); return; }
+  addDocumentArchive(direction, title, text);
+  document.getElementById('docArchTitle').value = '';
+  document.getElementById('docArchText').value = '';
+  persistCurrentCaseSnapshot();
+}
+
+function persistCurrentCaseSnapshot(){
+  if (!currentCaseId) return;
+  const store = loadCaseStore();
+  if (!store[currentCaseId]) return;
+  store[currentCaseId].data = collectFormData();
+  store[currentCaseId].history = caseHistory;
+  store[currentCaseId].negotiationLog = negotiationLog;
+  store[currentCaseId].documentArchive = documentArchive;
+  saveCaseStore(store);
+  renderDashboard();
+}
+
+function renderDocumentArchive(){
+  const body = document.getElementById('documentArchiveBody');
+  if (!documentArchive.length) { body.innerHTML = '<tr><td colspan="4" style="color:var(--muted)">保管されている書面はまだありません。</td></tr>'; return; }
+  const DIR_LABELS = { sent: '送付', received: '受信' };
+  body.innerHTML = documentArchive.map((doc, i) =>
+    '<tr><td>' + doc.time + '</td><td>' + (DIR_LABELS[doc.direction] || doc.direction) + '</td><td>' + doc.title + '</td>' +
+    '<td><button class="btn btn-outline" onclick="viewDocumentArchive(' + i + ')">表示</button></td></tr>'
+  ).join('');
+}
+
+function viewDocumentArchive(index){
+  const doc = documentArchive[index];
+  if (!doc) return;
+  document.getElementById('docArchiveViewTitle').textContent = doc.title + '（' + (doc.direction === 'sent' ? '送付' : '受信') + '・' + doc.time + '）';
+  document.getElementById('docArchiveViewOut').value = doc.text;
+  document.getElementById('docArchiveViewWrap').style.display = 'block';
+  document.getElementById('docArchiveViewWrap').scrollIntoView({behavior:'smooth'});
+}
 
 function renderDocList(items, savedTasks){
   docTasks = savedTasks || {};
@@ -775,6 +862,7 @@ function saveCase(){
     data: collectFormData(),
     history: caseHistory,
     negotiationLog: negotiationLog,
+    documentArchive: documentArchive,
   };
   saveCaseStore(store);
   refreshCaseSelect();
@@ -793,8 +881,11 @@ function loadCase(caseId){
   applyFormData(c.data || {});
   caseHistory = c.history || [];
   negotiationLog = c.negotiationLog || [];
+  documentArchive = c.documentArchive || [];
   renderHistory();
   renderNegotiationLog();
+  renderDocumentArchive();
+  document.getElementById('docArchiveViewWrap').style.display = 'none';
 }
 
 function deleteCase(caseId){
@@ -812,6 +903,7 @@ function newCase(){
   currentCaseId = null;
   caseHistory = [];
   negotiationLog = [];
+  documentArchive = [];
   document.getElementById('caseLabel').value = '';
   FIELD_IDS.forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('separation').value = 'none';
@@ -833,12 +925,16 @@ function newCase(){
   }
   renderHistory();
   renderNegotiationLog();
+  renderDocumentArchive();
+  document.getElementById('docArchiveViewWrap').style.display = 'none';
+  document.getElementById('docArchTitle').value = '';
+  document.getElementById('docArchText').value = '';
   document.getElementById('caseSelect').value = '';
 }
 
 function exportCase(){
   const label = document.getElementById('caseLabel').value.trim() || '無題の事件';
-  const payload = { label: label, savedAt: new Date().toLocaleString('ja-JP'), data: collectFormData(), history: caseHistory, negotiationLog: negotiationLog };
+  const payload = { label: label, savedAt: new Date().toLocaleString('ja-JP'), data: collectFormData(), history: caseHistory, negotiationLog: negotiationLog, documentArchive: documentArchive };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -857,10 +953,12 @@ function importCase(file){
       applyFormData(payload.data || {});
       caseHistory = payload.history || [];
       negotiationLog = payload.negotiationLog || [];
+      documentArchive = payload.documentArchive || [];
       renderHistory();
       renderNegotiationLog();
+      renderDocumentArchive();
       const store = loadCaseStore();
-      store[currentCaseId] = { label: payload.label || '無題の事件', savedAt: new Date().toLocaleString('ja-JP'), data: payload.data || {}, history: caseHistory, negotiationLog: negotiationLog };
+      store[currentCaseId] = { label: payload.label || '無題の事件', savedAt: new Date().toLocaleString('ja-JP'), data: payload.data || {}, history: caseHistory, negotiationLog: negotiationLog, documentArchive: documentArchive };
       saveCaseStore(store);
       refreshCaseSelect();
       renderDashboard();
@@ -949,16 +1047,8 @@ function parseOpponentText(){
   });
   addHistory('相手方からの回答を反映');
   addNegotiationSnapshot('相手方回答を反映');
-  if (currentCaseId) {
-    const store = loadCaseStore();
-    if (store[currentCaseId]) {
-      store[currentCaseId].data = collectFormData();
-      store[currentCaseId].history = caseHistory;
-      store[currentCaseId].negotiationLog = negotiationLog;
-      saveCaseStore(store);
-      renderDashboard();
-    }
-  }
+  addDocumentArchive('received', '相手方からの回答書', document.getElementById('opponentText').value);
+  persistCurrentCaseSnapshot();
 }
 
 function generateRebuttal(){
@@ -1010,16 +1100,8 @@ function generateRebuttal(){
   document.getElementById('rebuttalWrap').scrollIntoView({behavior:'smooth'});
   addHistory('反論書面を生成');
   addNegotiationSnapshot('反論書面を生成');
-  if (currentCaseId) {
-    const store = loadCaseStore();
-    if (store[currentCaseId]) {
-      store[currentCaseId].data = collectFormData();
-      store[currentCaseId].history = caseHistory;
-      store[currentCaseId].negotiationLog = negotiationLog;
-      saveCaseStore(store);
-      renderDashboard();
-    }
-  }
+  addDocumentArchive('sent', '反論書面', document.getElementById('rebuttalOut').value);
+  persistCurrentCaseSnapshot();
 }
 
 function generateAgreement(){
@@ -1078,15 +1160,8 @@ function generateAgreement(){
   document.getElementById('agreementWrap').style.display = 'block';
   document.getElementById('agreementWrap').scrollIntoView({behavior:'smooth'});
   addHistory('離婚協議書（案）を生成');
-  if (currentCaseId) {
-    const store = loadCaseStore();
-    if (store[currentCaseId]) {
-      store[currentCaseId].data = collectFormData();
-      store[currentCaseId].history = caseHistory;
-      saveCaseStore(store);
-      renderDashboard();
-    }
-  }
+  addDocumentArchive('sent', '離婚協議書（案）', document.getElementById('agreementOut').value);
+  persistCurrentCaseSnapshot();
 }
 
 function checked(issue){
@@ -1555,16 +1630,8 @@ function generate(){
 
   addHistory('チェックリスト・聴取事項・請求書面を生成');
   addNegotiationSnapshot('初回請求書面を生成');
-  if (currentCaseId) {
-    const store = loadCaseStore();
-    if (store[currentCaseId]) {
-      store[currentCaseId].data = collectFormData();
-      store[currentCaseId].history = caseHistory;
-      store[currentCaseId].negotiationLog = negotiationLog;
-      saveCaseStore(store);
-      renderDashboard();
-    }
-  }
+  addDocumentArchive('sent', '受任通知・初回請求書面', document.getElementById('letterOut').value);
+  persistCurrentCaseSnapshot();
 }
 
 function downloadAsWord(textareaId, filename){
@@ -1593,7 +1660,7 @@ function seedDemoData(){
 
   Object.keys(store).forEach(id => { if (store[id].label === '保存テスト用１' || store[id].label === '保存テスト用1') delete store[id]; });
 
-  if (!localStorage.getItem('divorceDemoSeeded_v1')) {
+  if (!localStorage.getItem('divorceDemoSeeded_v2')) {
     const commonFirm = {
       firmName: '○○法律事務所',
       lawyerName: '弁護士　検証太郎',
@@ -1648,6 +1715,11 @@ function seedDemoData(){
           { time: '2026/6/15 10:00:00', label: '初回請求書面を生成', living: '10万円', livingNote: '', support: '5万円', supportNote: '', alimony: '100万円', alimonyNote: '' },
           { time: '2026/6/20 14:05:00', label: '反論書面を生成', living: '10万円', livingNote: '月5万円のみ提示', support: '5万円', supportNote: '月3万円を提示', alimony: '100万円', alimonyNote: '50万円を提示' },
         ],
+        documentArchive: [
+          { time: '2026/6/15 10:00:00', direction: 'sent', title: '受任通知・初回請求書面', text: '受任通知・初回請求書面（ドラフト）\n依頼者佐藤恵子様の代理人として、離婚・婚姻費用（月10万円）・養育費（月5万円）・財産分与・慰謝料（100万円）・年金分割についてご通知します。' },
+          { time: '2026/6/20 14:00:00', direction: 'received', title: '相手方からの回答書', text: '離婚自体には応じます。婚姻費用は月5万円のみ、養育費は月3万円を提示します。財産分与の売却には応じますが分与比率には異論があります。慰謝料は50万円であれば応じます。年金分割は異議ありません。' },
+          { time: '2026/6/20 14:05:00', direction: 'sent', title: '反論書面', text: '反論書面（ドラフト）\n婚姻費用・養育費・慰謝料について、相手方提示額は依頼者の希望と大きく異なるため、根拠資料の開示を求める。' },
+        ],
       },
       {
         id: 'demo_case_b',
@@ -1669,6 +1741,9 @@ function seedDemoData(){
         ],
         negotiationLog: [
           { time: '2026/6/24 11:30:00', label: '初回請求書面を生成', living: '8万円', livingNote: '', support: '', supportNote: '', alimony: '', alimonyNote: '' },
+        ],
+        documentArchive: [
+          { time: '2026/6/24 11:30:00', direction: 'sent', title: '受任通知・初回請求書面', text: '受任通知・初回請求書面（ドラフト）\n依頼者高橋直美様の代理人として、離婚及び婚姻費用（月8万円）についてご通知します。本書面到達後14日以内にご回答ください。' },
         ],
       },
       {
@@ -1693,6 +1768,10 @@ function seedDemoData(){
         ],
         negotiationLog: [
           { time: '2026/6/10 9:00:00', label: '初回請求書面を生成', living: '18万円', livingNote: '', support: '10万円', supportNote: '', alimony: '300万円', alimonyNote: '' },
+        ],
+        documentArchive: [
+          { time: '2026/6/10 9:00:00', direction: 'sent', title: '受任通知・初回請求書面', text: '受任通知・初回請求書面（ドラフト）\n依頼者木村裕子様の代理人として、離婚・婚姻費用・養育費・財産分与・慰謝料・年金分割・親権についてご通知します。' },
+          { time: '2026/6/18 13:00:00', direction: 'received', title: '相手方代理人からの回答書', text: '離婚自体には異論ありません。婚姻費用・養育費・慰謝料については、依頼者提示額との差が大きく、協議が難航しています。調停での解決を希望します。' },
         ],
       },
       {
@@ -1734,14 +1813,21 @@ function seedDemoData(){
           { time: '2026/6/5 16:00:00', label: '初回請求書面を生成', living: '12万円', livingNote: '', support: '6万円', supportNote: '', alimony: '150万円', alimonyNote: '' },
           { time: '2026/6/15 10:10:00', label: '反論書面を生成', living: '12万円', livingNote: '月12万円で合意', support: '6万円', supportNote: '月6万円で合意', alimony: '150万円', alimonyNote: '150万円で合意' },
         ],
+        documentArchive: [
+          { time: '2026/6/5 16:00:00', direction: 'sent', title: '受任通知・初回請求書面', text: '受任通知・初回請求書面（ドラフト）\n依頼者中村さゆり様の代理人として、離婚・婚姻費用・養育費・財産分与・慰謝料・年金分割・親権についてご通知します。' },
+          { time: '2026/6/12 9:00:00', direction: 'received', title: '相手方代理人からの回答書（第1回）', text: '離婚・年金分割・親権には異議ありません。婚姻費用は月8万円、養育費は月6万円、慰謝料は100万円であれば応じます。自宅の売却には応じません。' },
+          { time: '2026/6/15 10:10:00', direction: 'sent', title: '確認書面', text: '確認書面（ドラフト）\n貴職よりいただきました譲歩案につき、依頼者と協議の上、合意する意向を確認しましたので、以下のとおり最終合意内容を確認いたします。' },
+          { time: '2026/6/20 11:00:00', direction: 'received', title: '相手方代理人からの回答書（第2回・譲歩案）', text: '婚姻費用は月12万円、養育費は月6万円、慰謝料は150万円であれば応じます。自宅売却差額は折半に同意します。' },
+          { time: '2026/6/22 15:00:00', direction: 'sent', title: '離婚協議書（案）', text: '離婚協議書（案）\n\n中村　さゆり（以下「甲」という。）と中村　大輔（以下「乙」という。）は、甲乙間の離婚及びこれに伴う諸条件について、以下のとおり合意する。（以下、全7条＋公正証書化条項）' },
+        ],
       },
     ];
 
     demoCases.forEach(c => {
-      store[c.id] = { label: c.label, savedAt: c.savedAt, data: c.data, history: c.history, negotiationLog: c.negotiationLog };
+      store[c.id] = { label: c.label, savedAt: c.savedAt, data: c.data, history: c.history, negotiationLog: c.negotiationLog, documentArchive: c.documentArchive || [] };
     });
 
-    localStorage.setItem('divorceDemoSeeded_v1', '1');
+    localStorage.setItem('divorceDemoSeeded_v2', '1');
   }
 
   saveCaseStore(store);
@@ -1752,6 +1838,7 @@ renderOpponentTable();
 refreshCaseSelect();
 renderHistory();
 renderNegotiationLog();
+renderDocumentArchive();
 renderDashboard();
 </script>
 
