@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>離婚事件処理支援ツール｜受任前ヒアリングから交渉・進捗管理・協議書作成まで</title>
+<style>
+  :root{
+    --navy:#0f2c4c;
+    --blue:#1c6dd0;
+    --accent:#e8852b;
+    --accent-dark:#cf6f18;
+    --bg:#f5f7fa;
+    --text:#26303a;
+    --muted:#5f6b78;
+    --line:#e2e8f0;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;color:var(--text);line-height:1.7;background:var(--bg);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:24px 20px 80px}
+  header{background:var(--navy);color:#fff;padding:22px 0}
+  header .wrap{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  header h1{font-size:1.25rem;font-weight:800}
+  header p{font-size:.78rem;color:#cfe0f2}
+  h2{font-size:1.05rem;color:var(--navy);font-weight:800;margin-bottom:14px;border-left:5px solid var(--accent);padding-left:10px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:24px;margin-bottom:22px;box-shadow:0 2px 10px rgba(15,44,76,.05)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+  label.field{display:block;font-size:.82rem;font-weight:700;color:var(--muted);margin-bottom:4px}
+  input[type=text],input[type=date],input[type=number],select,textarea{
+    width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;font-size:.92rem;font-family:inherit;background:#fff
+  }
+  .field-wrap{margin-bottom:14px}
+  fieldset{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+  legend{font-weight:800;color:var(--navy);font-size:.88rem;padding:0 6px}
+  .opt-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 18px}
+  @media(max-width:760px){.opt-row{grid-template-columns:1fr}}
+  .opt{display:flex;align-items:center;gap:8px;font-size:.9rem}
+  .opt input{width:auto}
+  .sub-detail{margin-top:8px;padding:10px 12px;background:var(--bg);border-radius:8px;display:none}
+  .sub-detail.show{display:block}
+  .btn{display:inline-block;border:none;border-radius:8px;font-weight:700;text-align:center;cursor:pointer;padding:13px 28px;font-size:1rem}
+  .btn-accent{background:var(--accent);color:#fff}
+  .btn-accent:hover{background:var(--accent-dark)}
+  .btn-outline{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  .btn-row{display:flex;gap:12px;justify-content:center;margin:28px 0;flex-wrap:wrap}
+  #result{display:none}
+  .result-section{margin-bottom:24px}
+  .result-section h3{font-size:.95rem;color:var(--blue);font-weight:800;margin-bottom:8px}
+  ul.checklist{list-style:none}
+  ul.checklist li{position:relative;padding:6px 0 6px 28px;font-size:.92rem;border-bottom:1px dashed var(--line)}
+  ul.checklist li::before{content:"☐";position:absolute;left:0;top:6px;color:var(--blue);font-size:1.1rem}
+  ul.checklist li.task-check{padding-left:4px}
+  ul.checklist li.task-check::before{content:none}
+  ul.checklist li.task-check.done{color:var(--muted);text-decoration:line-through}
+  ul.qa{list-style:none}
+  ul.qa li{position:relative;padding:7px 0 7px 22px;font-size:.92rem;border-bottom:1px dashed var(--line)}
+  ul.qa li::before{content:"Q.";position:absolute;left:0;top:7px;color:var(--accent);font-weight:800;font-size:.85rem}
+  .tag-cat{display:inline-block;background:var(--blue);color:#fff;font-size:.68rem;padding:2px 8px;border-radius:10px;margin-right:8px;vertical-align:middle}
+  table.points{width:100%;border-collapse:collapse;font-size:.88rem}
+  table.points th,table.points td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  table.points th{background:var(--bg);color:var(--navy);font-weight:800;width:9.5em}
+  table.points td.status-claim{color:var(--accent-dark);font-weight:700}
+  table.points td.status-na{color:#9aa6b2}
+  table.dash{width:100%;border-collapse:collapse;font-size:.86rem}
+  table.dash th,table.dash td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  table.dash th{background:var(--bg);color:var(--navy);font-weight:800}
+  table.dash tr.deadline-over td{background:#fdecea}
+  table.dash tr.deadline-soon td{background:#fff6e0}
+  .badge{display:inline-block;font-size:.72rem;font-weight:700;padding:2px 9px;border-radius:10px;color:#fff}
+  .badge-negotiating{background:var(--blue)}
+  .badge-waiting{background:var(--accent)}
+  .badge-mediation{background:#7a52c9}
+  .badge-litigation{background:#b3392c}
+  .badge-settled{background:#2f9e5b}
+  .badge-closed{background:#8a939c}
+  .deadline-text-over{color:#b3392c;font-weight:800}
+  .deadline-text-soon{color:var(--accent-dark);font-weight:800}
+  .row-link{cursor:pointer;color:var(--blue);text-decoration:underline}
+  nav.stepnav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 22px}
+  nav.stepnav a{background:#fff;border:1px solid var(--navy);color:var(--navy);font-size:.8rem;font-weight:700;padding:7px 14px;border-radius:20px;text-decoration:none}
+  nav.stepnav a:hover{background:var(--navy);color:#fff}
+  .task-check{margin-bottom:4px}
+  .task-check input{width:auto;margin-right:8px}
+  .task-check.done label{color:var(--muted);text-decoration:line-through}
+  table.cal{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:10px}
+  table.cal th,table.cal td{border:1px solid var(--line);padding:6px;vertical-align:top;height:64px;width:14.2%}
+  table.cal th{background:var(--bg);text-align:center;color:var(--navy)}
+  table.cal td.othermonth{background:#fafbfc;color:#c2cad2}
+  table.cal td .daynum{font-weight:700;font-size:.78rem;color:var(--muted)}
+  table.cal td .cal-case{display:block;font-size:.72rem;background:var(--accent);color:#fff;border-radius:4px;padding:1px 4px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  table.cal td.has-overdue .cal-case{background:#b3392c}
+  .cal-nav{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:8px;font-weight:800;color:var(--navy)}
+  textarea#letterOut,textarea#memoOut{width:100%;min-height:420px;font-size:.86rem;line-height:1.9;padding:18px;border:1px solid var(--line);border-radius:8px;white-space:pre-wrap}
+  @media print{
+    header,.btn-row,.card.input-card{display:none}
+    body{background:#fff}
+    .card{box-shadow:none;border:1px solid #999}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div>
+      <h1>離婚事件処理支援ツール</h1>
+      <p>受任前ヒアリングから、交渉・反論書面のやり取り、進捗管理、示談・協議書作成まで、事件処理を一元的に支援</p>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="stepnav">
+    <a href="#section-dashboard">① 事件一覧・進捗管理</a>
+    <a href="#section-intake">② 受任前ヒアリング・請求書面</a>
+    <a href="#section-negotiation">③ 相手方とのやり取り・反論書面</a>
+    <a href="#section-agreement">④ 示談・離婚協議書（案）</a>
+  </nav>
+
+  <div class="card input-card" id="section-dashboard">
+    <h2>事件一覧・進捗管理</h2>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
+      保存済みの全事件をステータス・次回対応期限の観点で一覧表示します。期限切れ・期限間近の事件は色付けして表示されます。事件名をクリックすると読込みます。
+    </p>
+    <div class="btn-row" style="margin:0 0 12px">
+      <button class="btn btn-outline" onclick="toggleDashboardView()" id="dashboardViewToggle">カレンダー表示に切替</button>
+    </div>
+    <div id="dashboardTableView" style="overflow-x:auto">
+      <table class="dash">
+        <thead><tr><th>事件名</th><th>ステータス</th><th>次回対応期限</th><th>資料準備</th><th>最終更新</th><th>直近の対応</th></tr></thead>
+        <tbody id="dashboardBody"></tbody>
+      </table>
+    </div>
+    <div id="dashboardCalendarView" style="display:none">
+      <div class="cal-nav">
+        <button class="btn btn-outline" style="padding:6px 14px" onclick="shiftCalMonth(-1)">＜前月</button>
+        <span id="calMonthLabel"></span>
+        <button class="btn btn-outline" style="padding:6px 14px" onclick="shiftCalMonth(1)">次月＞</button>
+      </div>
+      <table class="cal">
+        <thead><tr><th>日</th><th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th>土</th></tr></thead>
+        <tbody id="calBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card input-card">
+    <h2>事件の保存・呼び出し</h2>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
+      入力内容・生成済み書面・相手方とのやり取りはブラウザ内（localStorage）に事件単位で保存できます。相手方からの回答が来た際は、保存済みの事件を呼び出してから「相手方からの回答」欄に進んでください。
+    </p>
+    <div class="grid2">
+      <div class="field-wrap">
+        <label class="field">事件名（保存用ラベル）</label>
+        <input type="text" id="caseLabel" placeholder="例）木村様（夫）離婚事件">
+      </div>
+      <div class="field-wrap">
+        <label class="field">保存済みの事件</label>
+        <select id="caseSelect"><option value="">-- 選択 --</option></select>
+      </div>
+      <div class="field-wrap">
+        <label class="field">進捗ステータス</label>
+        <select id="caseStatus">
+          <option value="negotiating">交渉中</option>
+          <option value="waiting">相手方回答待ち</option>
+          <option value="mediation">調停</option>
+          <option value="litigation">訴訟</option>
+          <option value="settled">示談・合意成立</option>
+          <option value="closed">終了</option>
+        </select>
+      </div>
+      <div class="field-wrap">
+        <label class="field">次回対応期限</label>
+        <input type="date" id="nextDeadline">
+      </div>
+    </div>
+    <div class="btn-row" style="margin:0 0 4px">
+      <button class="btn btn-accent" onclick="saveCase()">この内容で保存</button>
+      <button class="btn btn-outline" onclick="loadCase(document.getElementById('caseSelect').value)">選択した事件を読込</button>
+      <button class="btn btn-outline" onclick="deleteCase(document.getElementById('caseSelect').value)">選択した事件を削除</button>
+      <button class="btn btn-outline" onclick="newCase()">新規事件にする（入力クリア）</button>
+      <button class="btn btn-outline" onclick="exportCase()">JSONで書き出し</button>
+      <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">JSONから読込</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importCase(this.files[0])">
+    </div>
+    <div id="historyList" style="font-size:.85rem;color:var(--muted)"></div>
+  </div>
+
+  <div class="card input-card" id="section-intake">
+    <h2>0. 依頼者情報のまとめ入力（自由記述）</h2>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
+      聴取メモをそのまま貼り付けて「自動入力」を押すと、下記フォームにできるだけ反映します（反映後は必ず内容をご確認・修正してください）。
+    </p>
+    <div class="field-wrap">
+      <textarea id="freeText" rows="9" placeholder="例）
+依頼者：田中花子　相手方：田中太郎
+婚姻日：2015-04-10
+別居中（2024-09-01から）
+子：2人いる
+事情：相手の不貞行為が発覚。DVもあった。親権を希望、養育費の取り決めが必要。自宅（不動産）と預貯金がある。年金分割を希望。慰謝料200万円を希望。まずは調停を検討している。"></textarea>
+    </div>
+    <div class="btn-row" style="margin:0 0 4px">
+      <button class="btn btn-accent" onclick="parseFreeText()">自動入力</button>
+    </div>
+  </div>
+
+  <div class="card input-card">
+    <h2>1. 基本情報</h2>
+    <div class="grid2">
+      <div class="field-wrap">
+        <label class="field">依頼者氏名</label>
+        <input type="text" id="clientName" placeholder="例）甲野花子">
+      </div>
+      <div class="field-wrap">
+        <label class="field">相手方氏名</label>
+        <input type="text" id="spouseName" placeholder="例）甲野太郎">
+      </div>
+      <div class="field-wrap">
+        <label class="field">婚姻日</label>
+        <input type="date" id="marriageDate">
+      </div>
+      <div class="field-wrap">
+        <label class="field">別居の有無</label>
+        <select id="separation">
+          <option value="none">同居中</option>
+          <option value="separated">別居中</option>
+        </select>
+      </div>
+      <div class="field-wrap" id="separationDateWrap" style="display:none">
+        <label class="field">別居開始日</label>
+        <input type="date" id="separationDate">
+      </div>
+      <div class="field-wrap">
+        <label class="field">未成年の子の有無</label>
+        <select id="hasChildren">
+          <option value="no">なし</option>
+          <option value="yes">あり</option>
+        </select>
+      </div>
+      <div class="field-wrap" id="childrenCountWrap" style="display:none">
+        <label class="field">子の人数</label>
+        <input type="number" id="childrenCount" min="1" value="1">
+      </div>
+    </div>
+
+    <h2 style="margin-top:8px">2. 争点・事情チェック</h2>
+
+    <fieldset>
+      <legend>離婚原因・事情</legend>
+      <div class="opt-row">
+        <label class="opt"><input type="checkbox" data-issue="infidelity"> 不貞行為（浮気・不倫）の疑い</label>
+        <label class="opt"><input type="checkbox" data-issue="dv"> DV・モラルハラスメント</label>
+        <label class="opt"><input type="checkbox" data-issue="abandonment"> 悪意の遺棄（生活費不払い・家出等）</label>
+        <label class="opt"><input type="checkbox" data-issue="personality"> 性格の不一致・価値観の相違</label>
+        <label class="opt"><input type="checkbox" data-issue="addiction"> 暴力・ギャンブル・アルコール等の問題行動</label>
+        <label class="opt"><input type="checkbox" data-issue="mental"> 強度の精神病・その他重大事由</label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>子に関する事項</legend>
+      <div class="opt-row">
+        <label class="opt"><input type="checkbox" data-issue="custody"> 親権を争う可能性</label>
+        <label class="opt"><input type="checkbox" data-issue="visitation"> 面会交流について調整が必要</label>
+        <label class="opt"><input type="checkbox" data-issue="support"> 養育費の取り決めが必要</label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>財産・お金に関する事項</legend>
+      <div class="opt-row">
+        <label class="opt"><input type="checkbox" data-issue="realestate"> 不動産（自宅等）を所有</label>
+        <label class="opt"><input type="checkbox" data-issue="savings"> 預貯金・証券等の資産あり</label>
+        <label class="opt"><input type="checkbox" data-issue="debt"> 夫婦の債務（ローン・借金）あり</label>
+        <label class="opt"><input type="checkbox" data-issue="business"> 自営業・会社経営に関する資産あり</label>
+        <label class="opt"><input type="checkbox" data-issue="pension"> 年金分割の希望</label>
+        <label class="opt"><input type="checkbox" data-issue="alimony"> 慰謝料を請求したい</label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>進め方・その他</legend>
+      <div class="opt-row">
+        <label class="opt"><input type="checkbox" data-issue="negotiation"> まずは協議で進めたい</label>
+        <label class="opt"><input type="checkbox" data-issue="mediation"> 調停を予定・検討している</label>
+        <label class="opt"><input type="checkbox" data-issue="litigation"> 訴訟（裁判）も視野に入れている</label>
+        <label class="opt"><input type="checkbox" data-issue="urgent"> 身の安全等、緊急対応が必要</label>
+      </div>
+    </fieldset>
+
+    <h2 style="margin-top:8px">3. 請求内容・受任通知の送付先情報（書面用）</h2>
+    <div class="grid2">
+      <div class="field-wrap">
+        <label class="field">相手方の住所（送付先）</label>
+        <input type="text" id="spouseAddress" placeholder="例）東京都○○区○○1-2-3">
+      </div>
+      <div class="field-wrap">
+        <label class="field">回答期限（本書面到達後・日数）</label>
+        <input type="number" id="replyDays" value="14" min="1">
+      </div>
+      <div class="field-wrap">
+        <label class="field">婚姻費用の希望額（月額・任意）</label>
+        <input type="text" id="livingExpenseAmount" placeholder="例）15万円">
+      </div>
+      <div class="field-wrap">
+        <label class="field">養育費の希望額（月額・任意）</label>
+        <input type="text" id="childSupportAmount" placeholder="例）6万円">
+      </div>
+      <div class="field-wrap">
+        <label class="field">慰謝料の希望額（任意）</label>
+        <input type="text" id="alimonyAmount" placeholder="例）200万円">
+      </div>
+      <div class="field-wrap">
+        <label class="field">財産分与の希望（任意・概要）</label>
+        <input type="text" id="propertyDivisionNote" placeholder="例）自宅は売却し折半">
+      </div>
+      <div class="field-wrap">
+        <label class="field">事務所名</label>
+        <input type="text" id="firmName" placeholder="例）○○法律事務所">
+      </div>
+      <div class="field-wrap">
+        <label class="field">担当弁護士名</label>
+        <input type="text" id="lawyerName" placeholder="例）弁護士 ○○ ○○">
+      </div>
+      <div class="field-wrap">
+        <label class="field">事務所連絡先（電話・FAX等）</label>
+        <input type="text" id="firmContact" placeholder="例）TEL 03-0000-0000／FAX 03-0000-0001">
+      </div>
+      <div class="field-wrap">
+        <label class="field">事務所住所</label>
+        <input type="text" id="firmAddress" placeholder="例）東京都○○区○○4-5-6 ○○ビル3階">
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-accent" onclick="generate()">チェックリスト・聴取事項・請求書面を生成</button>
+      <button class="btn btn-outline" onclick="window.print()">印刷 / PDF保存</button>
+    </div>
+  </div>
+
+  <div id="result">
+    <div class="card">
+      <div id="summaryHead" style="margin-bottom:18px;font-size:.9rem;color:var(--muted)"></div>
+
+      <div class="result-section">
+        <h2>離婚事件で決めるべき7項目の整理</h2>
+        <table class="points">
+          <thead><tr><th>項目</th><th>方針・請求内容</th></tr></thead>
+          <tbody id="pointsBody"></tbody>
+        </table>
+      </div>
+
+      <div class="result-section">
+        <h2>必要書類・資料チェックリスト</h2>
+        <p id="docProgress" style="font-size:.82rem;color:var(--muted);margin-bottom:8px"></p>
+        <ul class="checklist" id="docList"></ul>
+      </div>
+
+      <div class="result-section">
+        <h2>依頼者への聴取事項（ヒアリングシート）</h2>
+        <ul class="qa" id="qaList"></ul>
+      </div>
+
+      <div class="result-section">
+        <h2>法的見通し（依頼者説明・内部検討用メモ）</h2>
+        <div class="btn-row" style="margin:0 0 12px">
+          <button class="btn btn-outline" onclick="copyArea('memoOut')">本文をコピー</button>
+          <button class="btn btn-outline" onclick="downloadAsWord('memoOut','法的見通し検討メモ.doc')">Wordで保存</button>
+        </div>
+        <textarea id="memoOut" readonly></textarea>
+      </div>
+
+      <div class="result-section">
+        <h2>相手方への受任通知・初回請求書面（ドラフト）</h2>
+        <div class="btn-row" style="margin:0 0 12px">
+          <button class="btn btn-outline" onclick="copyArea('letterOut')">本文をコピー</button>
+          <button class="btn btn-outline" onclick="downloadAsWord('letterOut','受任通知・請求書面.doc')">Wordで保存</button>
+        </div>
+        <textarea id="letterOut" readonly></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="card input-card" id="section-negotiation">
+    <h2>4. 相手方からの回答・反論書面の作成</h2>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
+      相手方代理人等からの回答を貼り付けて「回答を反映」を押すと、7項目ごとの相手方の立場を自動で下書きします（必ず内容を確認・修正してください）。修正後「反論書面を生成」を押すと、項目ごとの方針を踏まえた書面ドラフトを作成します。
+    </p>
+    <div class="field-wrap">
+      <textarea id="opponentText" rows="6" placeholder="例）離婚自体には応じる。慰謝料は争う。婚姻費用は月10万円なら応じる。親権は争わない。"></textarea>
+    </div>
+    <div class="btn-row" style="margin:0 0 12px">
+      <button class="btn btn-accent" onclick="parseOpponentText()">回答を反映</button>
+    </div>
+    <table class="points">
+      <thead><tr><th>項目</th><th>相手方の立場</th><th>補足（条件等）</th><th>最終合意内容（協議書用）</th></tr></thead>
+      <tbody id="opponentBody"></tbody>
+    </table>
+    <div class="btn-row">
+      <button class="btn btn-accent" onclick="generateRebuttal()">反論書面を生成</button>
+    </div>
+    <div class="result-section" id="rebuttalWrap" style="display:none">
+      <h2>反論書面（ドラフト）</h2>
+      <div class="btn-row" style="margin:0 0 12px">
+        <button class="btn btn-outline" onclick="copyArea('rebuttalOut')">本文をコピー</button>
+        <button class="btn btn-outline" onclick="downloadAsWord('rebuttalOut','反論書面.doc')">Wordで保存</button>
+      </div>
+      <textarea id="rebuttalOut" readonly></textarea>
+    </div>
+
+    <div class="result-section" id="negotiationLogWrap" style="display:none">
+      <h2>金額交渉の経過</h2>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
+        「相手方からの回答を反映」「反論書面を生成」のたびに、その時点の請求額・相手方提示額（補足欄の記載）を記録します。
+      </p>
+      <div style="overflow-x:auto">
+        <table class="dash">
+          <thead><tr><th>時点</th><th>婚姻費用</th><th>養育費</th><th>慰謝料</th></tr></thead>
+          <tbody id="negotiationLogBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card input-card" id="section-documents">
+    <h2>送付・受信書面の保管庫</h2>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
+      当方から送付した書面（初回請求書面・反論書面・協議書案）は生成時に自動で保管されます。相手方から受け取った書面は、本文を貼り付けて「保管庫に保存」を押すと、いつでも内容を呼び出せます。
+    </p>
+    <div class="field-wrap">
+      <label>区分</label>
+      <select id="docArchDirection">
+        <option value="sent">送付（当方→相手方）</option>
+        <option value="received">受信（相手方→当方）</option>
+      </select>
+    </div>
+    <div class="field-wrap">
+      <label>書面名</label>
+      <input type="text" id="docArchTitle" placeholder="例）相手方代理人からの回答書（第1回）">
+    </div>
+    <div class="field-wrap">
+      <textarea id="docArchText" rows="6" placeholder="書面の本文を貼り付けてください"></textarea>
+    </div>
+    <div class="btn-row" style="margin:0 0 12px">
+      <button class="btn btn-accent" onclick="manualAddDocumentArchive()">保管庫に保存</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="dash">
+        <thead><tr><th>日時</th><th>区分</th><th>書面名</th><th></th></tr></thead>
+        <tbody id="documentArchiveBody"></tbody>
+      </table>
+    </div>
+    <div class="result-section" id="docArchiveViewWrap" style="display:none">
+      <h2 id="docArchiveViewTitle">書面の内容</h2>
+      <div class="btn-row" style="margin:0 0 12px">
+        <button class="btn btn-outline" onclick="copyArea('docArchiveViewOut')">本文をコピー</button>
+        <button class="btn btn-outline" onclick="downloadAsWord('docArchiveViewOut','書面.doc')">Wordで保存</button>
+      </div>
+      <textarea id="docArchiveViewOut" readonly></textarea>
+    </div>
+  </div>
+
+  <div class="card input-card" id="section-agreement">
+    <h2>5. 示談・離婚協議書（案）の作成</h2>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
+      上の表の「最終合意内容」欄に各項目の最終的な合意内容を記入し（条件付で応じる等の補足欄をコピーして調整してください）、ボタンを押すと離婚協議書（案）のドラフトを生成します。公正証書化する場合は、最終的に公証役場・司法書士等とご確認ください。
+    </p>
+    <div class="btn-row" style="margin:0 0 12px">
+      <button class="btn btn-accent" onclick="generateAgreement()">離婚協議書（案）を生成</button>
+    </div>
+    <div class="result-section" id="agreementWrap" style="display:none">
+      <h2>離婚協議書（案）</h2>
+      <div class="btn-row" style="margin:0 0 12px">
+        <button class="btn btn-outline" onclick="copyArea('agreementOut')">本文をコピー</button>
+        <button class="btn btn-outline" onclick="downloadAsWord('agreementOut','離婚協議書（案）.doc')">Wordで保存</button>
+      </div>
+      <textarea id="agreementOut" readonly></textarea>
+    </div>
+  </div>
+
+</div>
+
+<script>
+document.getElementById('separation').addEventListener('change', function(){
+  document.getElementById('separationDateWrap').style.display = this.value === 'separated' ? 'block' : 'none';
+});
+document.getElementById('hasChildren').addEventListener('change', function(){
+  document.getElementById('childrenCountWrap').style.display = this.value === 'yes' ? 'block' : 'none';
+});
+
+// ============ 事件の保存・呼び出し ============
+const FIELD_IDS = ['clientName','spouseName','marriageDate','separation','separationDate',
+  'hasChildren','childrenCount','spouseAddress','replyDays','livingExpenseAmount',
+  'childSupportAmount','alimonyAmount','propertyDivisionNote','firmName','lawyerName',
+  'firmContact','firmAddress','freeText','opponentText','caseStatus','nextDeadline'];
+const STATUS_LABELS = {
+  negotiating: '交渉中', waiting: '相手方回答待ち', mediation: '調停',
+  litigation: '訴訟', settled: '示談・合意成立', closed: '終了',
+};
+const ISSUE_KEYS = ['infidelity','dv','abandonment','personality','addiction','mental',
+  'custody','visitation','support','realestate','savings','debt','business','pension',
+  'alimony','negotiation','mediation','litigation','urgent'];
+const POINT_DEFS = [
+  {key:'divorce', label:'⑴ 離婚するか', keywordRe:/離婚/},
+  {key:'living', label:'⑵ 婚姻費用', keywordRe:/婚姻費用/},
+  {key:'support', label:'⑶ 養育費', keywordRe:/養育費/},
+  {key:'property', label:'⑷ 財産分与', keywordRe:/財産分与/},
+  {key:'alimony', label:'⑸ 慰謝料', keywordRe:/慰謝料/},
+  {key:'pension', label:'⑹ 年金分割', keywordRe:/年金分割/},
+  {key:'custody', label:'⑺ 親権', keywordRe:/親権/},
+];
+
+let currentCaseId = null;
+let caseHistory = [];
+let negotiationLog = [];
+let documentArchive = [];
+let docTasks = {};
+
+function addDocumentArchive(direction, title, text){
+  if (!text || !text.trim()) return;
+  documentArchive.push({ time: new Date().toLocaleString('ja-JP'), direction: direction, title: title, text: text });
+  renderDocumentArchive();
+}
+
+function manualAddDocumentArchive(){
+  const direction = document.getElementById('docArchDirection').value;
+  const title = document.getElementById('docArchTitle').value.trim() || '無題の書面';
+  const text = document.getElementById('docArchText').value;
+  if (!text.trim()) { alert('書面の本文を貼り付けてください。'); return; }
+  addDocumentArchive(direction, title, text);
+  document.getElementById('docArchTitle').value = '';
+  document.getElementById('docArchText').value = '';
+  persistCurrentCaseSnapshot();
+}
+
+function persistCurrentCaseSnapshot(){
+  if (!currentCaseId) return;
+  const store = loadCaseStore();
+  if (!store[currentCaseId]) return;
+  store[currentCaseId].data = collectFormData();
+  store[currentCaseId].history = caseHistory;
+  store[currentCaseId].negotiationLog = negotiationLog;
+  store[currentCaseId].documentArchive = documentArchive;
+  saveCaseStore(store);
+  renderDashboard();
+}
+
+function renderDocumentArchive(){
+  const body = document.getElementById('documentArchiveBody');
+  if (!documentArchive.length) { body.innerHTML = '<tr><td colspan="4" style="color:var(--muted)">保管されている書面はまだありません。</td></tr>'; return; }
+  const DIR_LABELS = { sent: '送付', received: '受信' };
+  body.innerHTML = documentArchive.map((doc, i) =>
+    '<tr><td>' + doc.time + '</td><td>' + (DIR_LABELS[doc.direction] || doc.direction) + '</td><td>' + doc.title + '</td>' +
+    '<td><button class="btn btn-outline" onclick="viewDocumentArchive(' + i + ')">表示</button></td></tr>'
+  ).join('');
+}
+
+function viewDocumentArchive(index){
+  const doc = documentArchive[index];
+  if (!doc) return;
+  document.getElementById('docArchiveViewTitle').textContent = doc.title + '（' + (doc.direction === 'sent' ? '送付' : '受信') + '・' + doc.time + '）';
+  document.getElementById('docArchiveViewOut').value = doc.text;
+  document.getElementById('docArchiveViewWrap').style.display = 'block';
+  document.getElementById('docArchiveViewWrap').scrollIntoView({behavior:'smooth'});
+}
+
+function renderDocList(items, savedTasks){
+  docTasks = savedTasks || {};
+  const docList = document.getElementById('docList');
+  docList.innerHTML = '';
+  items.forEach((d, i) => {
+    const li = document.createElement('li');
+    li.className = 'task-check' + (docTasks[d] ? ' done' : '');
+    li.dataset.doc = d;
+    const id = 'doctask_' + i;
+    li.innerHTML = '<input type="checkbox" id="' + id + '"' + (docTasks[d] ? ' checked' : '') + '> <label for="' + id + '"></label>';
+    li.querySelector('label').textContent = d;
+    li.querySelector('input').addEventListener('change', function(){
+      docTasks[d] = this.checked;
+      li.classList.toggle('done', this.checked);
+      updateDocProgress();
+      if (currentCaseId) {
+        const store = loadCaseStore();
+        if (store[currentCaseId]) {
+          store[currentCaseId].data = collectFormData();
+          saveCaseStore(store);
+          renderDashboard();
+        }
+      }
+    });
+    docList.appendChild(li);
+  });
+  updateDocProgress();
+}
+
+function updateDocProgress(){
+  const items = Object.keys(docTasks);
+  const total = document.querySelectorAll('#docList li').length;
+  const done = document.querySelectorAll('#docList li.done').length;
+  const p = document.getElementById('docProgress');
+  p.textContent = total ? ('準備状況：' + done + ' / ' + total + ' 件完了') : '';
+}
+
+function loadCaseStore(){
+  try { return JSON.parse(localStorage.getItem('divorceCases') || '{}'); }
+  catch(e) { return {}; }
+}
+function saveCaseStore(store){
+  localStorage.setItem('divorceCases', JSON.stringify(store));
+}
+
+function collectFormData(){
+  const data = {};
+  FIELD_IDS.forEach(id => { data[id] = document.getElementById(id).value; });
+  data.issues = {};
+  ISSUE_KEYS.forEach(k => { data.issues[k] = checked(k); });
+  data.opponentStatus = {};
+  data.opponentNote = {};
+  data.finalTerms = {};
+  POINT_DEFS.forEach(p => {
+    const sel = document.getElementById('oppStatus_' + p.key);
+    const note = document.getElementById('oppNote_' + p.key);
+    const finalEl = document.getElementById('finalTerm_' + p.key);
+    if (sel) data.opponentStatus[p.key] = sel.value;
+    if (note) data.opponentNote[p.key] = note.value;
+    if (finalEl) data.finalTerms[p.key] = finalEl.value;
+  });
+  data.memoOut = document.getElementById('memoOut').value;
+  data.letterOut = document.getElementById('letterOut').value;
+  data.rebuttalOut = document.getElementById('rebuttalOut').value;
+  data.agreementOut = document.getElementById('agreementOut') ? document.getElementById('agreementOut').value : '';
+  data.docListItems = Array.from(document.querySelectorAll('#docList li')).map(li => li.dataset.doc);
+  data.docTasks = docTasks;
+  return data;
+}
+
+function applyFormData(data){
+  FIELD_IDS.forEach(id => { if (data[id] !== undefined) document.getElementById(id).value = data[id]; });
+  if (data.issues) ISSUE_KEYS.forEach(k => setIssue(k, !!data.issues[k]));
+  document.getElementById('separationDateWrap').style.display = data.separation === 'separated' ? 'block' : 'none';
+  document.getElementById('childrenCountWrap').style.display = data.hasChildren === 'yes' ? 'block' : 'none';
+  renderOpponentTable();
+  if (data.opponentStatus) POINT_DEFS.forEach(p => {
+    const sel = document.getElementById('oppStatus_' + p.key);
+    if (sel && data.opponentStatus[p.key] !== undefined) sel.value = data.opponentStatus[p.key];
+  });
+  if (data.opponentNote) POINT_DEFS.forEach(p => {
+    const note = document.getElementById('oppNote_' + p.key);
+    if (note && data.opponentNote[p.key] !== undefined) note.value = data.opponentNote[p.key];
+  });
+  if (data.finalTerms) POINT_DEFS.forEach(p => {
+    const finalEl = document.getElementById('finalTerm_' + p.key);
+    if (finalEl && data.finalTerms[p.key] !== undefined) finalEl.value = data.finalTerms[p.key];
+  });
+  document.getElementById('memoOut').value = data.memoOut || '';
+  document.getElementById('letterOut').value = data.letterOut || '';
+  document.getElementById('rebuttalOut').value = data.rebuttalOut || '';
+  document.getElementById('result').style.display = data.letterOut ? 'block' : 'none';
+  document.getElementById('rebuttalWrap').style.display = data.rebuttalOut ? 'block' : 'none';
+  renderDocList(data.docListItems || [], data.docTasks || {});
+  if (document.getElementById('agreementOut')) {
+    document.getElementById('agreementOut').value = data.agreementOut || '';
+    document.getElementById('agreementWrap').style.display = data.agreementOut ? 'block' : 'none';
+  }
+}
+
+function addHistory(label){
+  caseHistory.push({ time: new Date().toLocaleString('ja-JP'), label: label });
+  renderHistory();
+}
+
+function addNegotiationSnapshot(label){
+  negotiationLog.push({
+    time: new Date().toLocaleString('ja-JP'),
+    label: label,
+    living: document.getElementById('livingExpenseAmount').value || '',
+    livingNote: (document.getElementById('oppNote_living') || {}).value || '',
+    support: document.getElementById('childSupportAmount').value || '',
+    supportNote: (document.getElementById('oppNote_support') || {}).value || '',
+    alimony: document.getElementById('alimonyAmount').value || '',
+    alimonyNote: (document.getElementById('oppNote_alimony') || {}).value || '',
+  });
+  renderNegotiationLog();
+}
+
+function renderNegotiationLog(){
+  const wrap = document.getElementById('negotiationLogWrap');
+  const body = document.getElementById('negotiationLogBody');
+  if (!negotiationLog.length) { wrap.style.display = 'none'; body.innerHTML = ''; return; }
+  wrap.style.display = 'block';
+  const cell = (amount, note) => {
+    let s = amount ? '依頼者：' + amount : '';
+    if (note) s += (s ? '<br>' : '') + '相手方：' + note;
+    return s || '－';
+  };
+  body.innerHTML = negotiationLog.map(n =>
+    '<tr><th style="width:14em;background:var(--bg)">' + n.time + '　' + n.label + '</th>' +
+    '<td>' + cell(n.living, n.livingNote) + '</td>' +
+    '<td>' + cell(n.support, n.supportNote) + '</td>' +
+    '<td>' + cell(n.alimony, n.alimonyNote) + '</td></tr>'
+  ).join('');
+}
+
+function renderHistory(){
+  const wrap = document.getElementById('historyList');
+  if (!caseHistory.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = '<strong style="color:var(--navy)">経過記録：</strong><ul style="margin-top:6px">' +
+    caseHistory.map(h => '<li>' + h.time + '　' + h.label + '</li>').join('') + '</ul>';
+}
+
+function renderDashboard(){
+  const store = loadCaseStore();
+  const body = document.getElementById('dashboardBody');
+  const ids = Object.keys(store);
+  if (!ids.length) { body.innerHTML = '<tr><td colspan="6" style="color:var(--muted)">保存済みの事件はまだありません。</td></tr>'; return; }
+
+  const todayStr = new Date().toISOString().slice(0,10);
+  const soonLimit = new Date();
+  soonLimit.setDate(soonLimit.getDate() + 3);
+  const soonStr = soonLimit.toISOString().slice(0,10);
+
+  const rows = ids.map(id => {
+    const c = store[id];
+    const d = c.data || {};
+    const status = d.caseStatus || 'negotiating';
+    const deadline = d.nextDeadline || '';
+    const hist = c.history || [];
+    const lastAction = hist.length ? hist[hist.length - 1] : null;
+    let deadlineClass = '';
+    let deadlineTextClass = '';
+    if (deadline && status !== 'settled' && status !== 'closed') {
+      if (deadline < todayStr) { deadlineClass = 'deadline-over'; deadlineTextClass = 'deadline-text-over'; }
+      else if (deadline <= soonStr) { deadlineClass = 'deadline-soon'; deadlineTextClass = 'deadline-text-soon'; }
+    }
+    const docItems = d.docListItems || [];
+    const docTasksSaved = d.docTasks || {};
+    const docDone = docItems.filter(t => docTasksSaved[t]).length;
+    const docProgressText = docItems.length ? (docDone + ' / ' + docItems.length) : '－';
+    return { id, c, deadline, deadlineClass, deadlineTextClass, status, lastAction, docProgressText };
+  });
+
+  // 期限が近い（または超過の）事件を上位に表示
+  rows.sort((a, b) => {
+    if (a.deadline && b.deadline) return a.deadline < b.deadline ? -1 : a.deadline > b.deadline ? 1 : 0;
+    if (a.deadline) return -1;
+    if (b.deadline) return 1;
+    return 0;
+  });
+
+  body.innerHTML = rows.map(r => {
+    const badge = '<span class="badge badge-' + r.status + '">' + (STATUS_LABELS[r.status] || r.status) + '</span>';
+    const deadlineText = r.deadline ? '<span class="' + r.deadlineTextClass + '">' + r.deadline + (r.deadlineClass === 'deadline-over' ? '（期限超過）' : r.deadlineClass === 'deadline-soon' ? '（期限間近）' : '') + '</span>' : '－';
+    const lastActionText = r.lastAction ? r.lastAction.time + '　' + r.lastAction.label : '－';
+    return '<tr class="' + r.deadlineClass + '">' +
+      '<td><span class="row-link" onclick="loadCaseFromDashboard(\'' + r.id + '\')">' + (r.c.label || '無題の事件') + '</span></td>' +
+      '<td>' + badge + '</td>' +
+      '<td>' + deadlineText + '</td>' +
+      '<td>' + r.docProgressText + '</td>' +
+      '<td>' + (r.c.savedAt || '－') + '</td>' +
+      '<td>' + lastActionText + '</td></tr>';
+  }).join('');
+
+  if (document.getElementById('dashboardCalendarView').style.display !== 'none') renderCalendar();
+}
+
+let calMonth = new Date();
+calMonth.setDate(1);
+
+function toggleDashboardView(){
+  const tableView = document.getElementById('dashboardTableView');
+  const calView = document.getElementById('dashboardCalendarView');
+  const btn = document.getElementById('dashboardViewToggle');
+  const showingCal = calView.style.display !== 'none';
+  if (showingCal) {
+    calView.style.display = 'none';
+    tableView.style.display = 'block';
+    btn.textContent = 'カレンダー表示に切替';
+  } else {
+    tableView.style.display = 'none';
+    calView.style.display = 'block';
+    btn.textContent = '表形式に切替';
+    renderCalendar();
+  }
+}
+
+function shiftCalMonth(delta){
+  calMonth.setMonth(calMonth.getMonth() + delta);
+  renderCalendar();
+}
+
+function renderCalendar(){
+  const store = loadCaseStore();
+  const year = calMonth.getFullYear();
+  const month = calMonth.getMonth();
+  document.getElementById('calMonthLabel').textContent = year + '年' + (month + 1) + '月';
+
+  const deadlineMap = {};
+  Object.values(store).forEach(c => {
+    const d = c.data || {};
+    if (!d.nextDeadline) return;
+    if (d.caseStatus === 'settled' || d.caseStatus === 'closed') return;
+    (deadlineMap[d.nextDeadline] = deadlineMap[d.nextDeadline] || []).push(c.label || '無題の事件');
+  });
+
+  const todayStr = new Date().toISOString().slice(0,10);
+  const firstDay = new Date(year, month, 1);
+  const startWeekday = firstDay.getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cellsTotal = Math.ceil((startWeekday + daysInMonth) / 7) * 7;
+
+  let html = '';
+  for (let row = 0; row < cellsTotal / 7; row++) {
+    html += '<tr>';
+    for (let col = 0; col < 7; col++) {
+      const cellIndex = row * 7 + col;
+      const dayNum = cellIndex - startWeekday + 1;
+      if (dayNum < 1 || dayNum > daysInMonth) {
+        html += '<td class="othermonth"></td>';
+        continue;
+      }
+      const dateStr = year + '-' + String(month + 1).padStart(2,'0') + '-' + String(dayNum).padStart(2,'0');
+      const cases = deadlineMap[dateStr] || [];
+      const overdue = dateStr < todayStr && cases.length;
+      html += '<td class="' + (overdue ? 'has-overdue' : '') + '"><span class="daynum">' + dayNum + '</span>' +
+        cases.map(label => '<span class="cal-case">' + label + '</span>').join('') + '</td>';
+    }
+    html += '</tr>';
+  }
+  document.getElementById('calBody').innerHTML = html;
+}
+
+function loadCaseFromDashboard(caseId){
+  document.getElementById('caseSelect').value = caseId;
+  loadCase(caseId);
+  document.getElementById('caseLabel').closest('.card').scrollIntoView({behavior:'smooth'});
+}
+
+function refreshCaseSelect(){
+  const store = loadCaseStore();
+  const sel = document.getElementById('caseSelect');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">-- 選択 --</option>';
+  Object.keys(store).forEach(id => {
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = store[id].label + '（' + store[id].savedAt + '）';
+    sel.appendChild(opt);
+  });
+  if (store[prev]) sel.value = prev;
+}
+
+function saveCase(){
+  const label = document.getElementById('caseLabel').value.trim();
+  if (!label) { alert('事件名を入力してください。'); return; }
+  if (!currentCaseId) currentCaseId = 'case_' + Date.now();
+  const store = loadCaseStore();
+  store[currentCaseId] = {
+    label: label,
+    savedAt: new Date().toLocaleString('ja-JP'),
+    data: collectFormData(),
+    history: caseHistory,
+    negotiationLog: negotiationLog,
+    documentArchive: documentArchive,
+  };
+  saveCaseStore(store);
+  refreshCaseSelect();
+  renderDashboard();
+  document.getElementById('caseSelect').value = currentCaseId;
+  alert('保存しました。');
+}
+
+function loadCase(caseId){
+  if (!caseId) return;
+  const store = loadCaseStore();
+  const c = store[caseId];
+  if (!c) return;
+  currentCaseId = caseId;
+  document.getElementById('caseLabel').value = c.label;
+  applyFormData(c.data || {});
+  caseHistory = c.history || [];
+  negotiationLog = c.negotiationLog || [];
+  documentArchive = c.documentArchive || [];
+  renderHistory();
+  renderNegotiationLog();
+  renderDocumentArchive();
+  document.getElementById('docArchiveViewWrap').style.display = 'none';
+}
+
+function deleteCase(caseId){
+  if (!caseId) return;
+  if (!confirm('選択した事件を削除します。よろしいですか？')) return;
+  const store = loadCaseStore();
+  delete store[caseId];
+  saveCaseStore(store);
+  if (currentCaseId === caseId) newCase();
+  refreshCaseSelect();
+  renderDashboard();
+}
+
+function newCase(){
+  currentCaseId = null;
+  caseHistory = [];
+  negotiationLog = [];
+  documentArchive = [];
+  document.getElementById('caseLabel').value = '';
+  FIELD_IDS.forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('separation').value = 'none';
+  document.getElementById('hasChildren').value = 'no';
+  document.getElementById('caseStatus').value = 'negotiating';
+  document.getElementById('separationDateWrap').style.display = 'none';
+  document.getElementById('childrenCountWrap').style.display = 'none';
+  ISSUE_KEYS.forEach(k => setIssue(k, false));
+  renderOpponentTable();
+  document.getElementById('memoOut').value = '';
+  document.getElementById('letterOut').value = '';
+  document.getElementById('rebuttalOut').value = '';
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('rebuttalWrap').style.display = 'none';
+  renderDocList([], {});
+  if (document.getElementById('agreementOut')) {
+    document.getElementById('agreementOut').value = '';
+    document.getElementById('agreementWrap').style.display = 'none';
+  }
+  renderHistory();
+  renderNegotiationLog();
+  renderDocumentArchive();
+  document.getElementById('docArchiveViewWrap').style.display = 'none';
+  document.getElementById('docArchTitle').value = '';
+  document.getElementById('docArchText').value = '';
+  document.getElementById('caseSelect').value = '';
+}
+
+function exportCase(){
+  const label = document.getElementById('caseLabel').value.trim() || '無題の事件';
+  const payload = { label: label, savedAt: new Date().toLocaleString('ja-JP'), data: collectFormData(), history: caseHistory, negotiationLog: negotiationLog, documentArchive: documentArchive };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = label + '.json';
+  a.click();
+}
+
+function importCase(file){
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(){
+    try {
+      const payload = JSON.parse(reader.result);
+      currentCaseId = 'case_' + Date.now();
+      document.getElementById('caseLabel').value = payload.label || '';
+      applyFormData(payload.data || {});
+      caseHistory = payload.history || [];
+      negotiationLog = payload.negotiationLog || [];
+      documentArchive = payload.documentArchive || [];
+      renderHistory();
+      renderNegotiationLog();
+      renderDocumentArchive();
+      const store = loadCaseStore();
+      store[currentCaseId] = { label: payload.label || '無題の事件', savedAt: new Date().toLocaleString('ja-JP'), data: payload.data || {}, history: caseHistory, negotiationLog: negotiationLog, documentArchive: documentArchive };
+      saveCaseStore(store);
+      refreshCaseSelect();
+      renderDashboard();
+      document.getElementById('caseSelect').value = currentCaseId;
+    } catch(e) {
+      alert('JSONの読み込みに失敗しました。');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ============ 相手方からの回答・反論書面 ============
+function renderOpponentTable(){
+  const body = document.getElementById('opponentBody');
+  body.innerHTML = '';
+  POINT_DEFS.forEach(p => {
+    const tr = document.createElement('tr');
+    const th = document.createElement('th');
+    th.textContent = p.label;
+    const tdStatus = document.createElement('td');
+    const sel = document.createElement('select');
+    sel.id = 'oppStatus_' + p.key;
+    [['unknown','未確認'],['agree','同意'],['dispute','争う'],['conditional','条件付で応じる']].forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o[0]; opt.textContent = o[1];
+      sel.appendChild(opt);
+    });
+    tdStatus.appendChild(sel);
+    const tdNote = document.createElement('td');
+    const note = document.createElement('input');
+    note.type = 'text';
+    note.id = 'oppNote_' + p.key;
+    note.placeholder = '例）月10万円なら応じる';
+    tdNote.appendChild(note);
+    const tdFinal = document.createElement('td');
+    const finalInput = document.createElement('input');
+    finalInput.type = 'text';
+    finalInput.id = 'finalTerm_' + p.key;
+    finalInput.placeholder = '例）月8万円とする';
+    tdFinal.appendChild(finalInput);
+    tr.appendChild(th); tr.appendChild(tdStatus); tr.appendChild(tdNote); tr.appendChild(tdFinal);
+    body.appendChild(tr);
+  });
+}
+
+function splitIntoUnits(text){
+  // 「第3　養育費について」のような見出しのみの行と、続く本文行が別行になっている
+  // 書面形式に対応するため、句点（。）が出るまで行をまとめて1つの単位とする。
+  // 句点で終わる行（箇条書き等）は従来どおり1行＝1単位として扱う。
+  const lines = text.split('\n');
+  const units = [];
+  let buf = '';
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) { if (buf) { units.push(buf); buf = ''; } return; }
+    buf += trimmed;
+    if (/。/.test(trimmed)) {
+      buf.split(/(?<=。)/).filter(s => s).forEach(s => units.push(s));
+      buf = '';
+    }
+  });
+  if (buf) units.push(buf);
+  return units;
+}
+
+function parseOpponentText(){
+  const text = document.getElementById('opponentText').value;
+  if (!text.trim()) return;
+  // 文単位（見出し＋本文の結合を含む）で区切ってから争点語を探すことで、
+  // 隣接する別の文の語句（同意/争う等）を誤って取り込まないようにする
+  const sentences = splitIntoUnits(text);
+  const disputeRe = /争う(?!.{0,3}ない)|拒否|反対|応じない|認めない|不同意/;
+  const agreeRe = /同意|応じ(る|ます)|異議(は)?(ない|ありません|ございません)|認める|了承|問題ない|争わない/;
+
+  POINT_DEFS.forEach(p => {
+    const sentence = sentences.find(s => p.keywordRe.test(s));
+    if (!sentence) return;
+    const isDispute = disputeRe.test(sentence);
+    const isAgree = agreeRe.test(sentence);
+    let status = 'unknown';
+    if (isDispute && isAgree) status = 'conditional';
+    else if (isDispute) status = 'dispute';
+    else if (isAgree) status = 'agree';
+    const sel = document.getElementById('oppStatus_' + p.key);
+    if (sel) sel.value = status;
+  });
+  addHistory('相手方からの回答を反映');
+  addNegotiationSnapshot('相手方回答を反映');
+  addDocumentArchive('received', '相手方からの回答書', document.getElementById('opponentText').value);
+  persistCurrentCaseSnapshot();
+}
+
+function generateRebuttal(){
+  const clientName = document.getElementById('clientName').value || '依頼者';
+  const spouseName = document.getElementById('spouseName').value || '相手方';
+  const replyDays = document.getElementById('replyDays').value || '14';
+  const today = new Date().toLocaleDateString('ja-JP');
+
+  const STATUS_TEXT = {
+    agree: function(p){ return p.label + 'については、貴殿のご回答内容で異議ございません。今後、具体的な取り決め内容を確定させていただきたく存じます。'; },
+    dispute: function(p){ return p.label + 'について争うとのご回答ですが、依頼者の主張は従前のとおりであり、撤回いたしません。貴殿のご主張の根拠（具体的事実・証拠）をご教示いただいた上で、改めて協議させていただきたく存じます。'; },
+    conditional: function(p){ return p.label + 'について条件付きでのご回答をいただきましたが、その条件の当否については検討の上、別途回答いたします。'; },
+    unknown: function(p){ return p.label + 'につきましては、貴殿のご意向が明らかでないため、改めてご回答をお願いいたします。'; },
+  };
+
+  const lines = [];
+  lines.push(today);
+  lines.push('');
+  lines.push(document.getElementById('spouseAddress').value || '（送付先住所未記入）');
+  lines.push(spouseName + '　様');
+  lines.push('');
+  lines.push(document.getElementById('firmAddress').value || '（事務所住所未記入）');
+  lines.push(document.getElementById('firmName').value || '○○法律事務所');
+  lines.push(document.getElementById('lawyerName').value || '弁護士　○○　○○');
+  lines.push(document.getElementById('firmContact').value || 'TEL ○○-○○○○-○○○○');
+  lines.push('');
+  lines.push('　　　　　　　　　　　　　　　　回　答　書（反論）');
+  lines.push('');
+  lines.push('前略　貴殿よりいただきましたご回答につき、依頼者' + clientName + 'の代理人として、以下のとおり回答いたします。');
+  lines.push('');
+
+  let sec = 1;
+  POINT_DEFS.forEach(p => {
+    const status = (document.getElementById('oppStatus_' + p.key) || {}).value || 'unknown';
+    const note = (document.getElementById('oppNote_' + p.key) || {}).value || '';
+    lines.push('第' + sec + '　' + p.label);
+    lines.push(STATUS_TEXT[status](p) + (note ? '（相手方提示内容：' + note + '）' : ''));
+    lines.push('');
+    sec++;
+  });
+
+  lines.push('以上につきまして、本書面到達後' + replyDays + '日以内に、再度ご回答くださいますようお願い申し上げます。');
+  lines.push('期間内に誠意あるご回答をいただけない場合には、家庭裁判所への調停申立て等、法的手続に移行させていただく場合がございますので、あらかじめご了承おきください。');
+  lines.push('');
+  lines.push('草々');
+
+  document.getElementById('rebuttalOut').value = lines.join('\n');
+  document.getElementById('rebuttalWrap').style.display = 'block';
+  document.getElementById('rebuttalWrap').scrollIntoView({behavior:'smooth'});
+  addHistory('反論書面を生成');
+  addNegotiationSnapshot('反論書面を生成');
+  addDocumentArchive('sent', '反論書面', document.getElementById('rebuttalOut').value);
+  persistCurrentCaseSnapshot();
+}
+
+function generateAgreement(){
+  const clientName = document.getElementById('clientName').value || '依頼者';
+  const spouseName = document.getElementById('spouseName').value || '相手方';
+  const today = new Date().toLocaleDateString('ja-JP');
+
+  const FALLBACK = {
+    divorce: clientName + 'と' + spouseName + 'は、協議離婚することに合意する。',
+    living: '離婚成立までの婚姻費用について、双方協議の上定める。',
+    support: '養育費について、双方協議の上定める。',
+    property: '財産分与について、双方協議の上定める。',
+    alimony: '慰謝料について、双方協議の上定める。',
+    pension: '年金分割（合意分割）の按分割合について、双方協議の上定める。',
+    custody: '未成年の子の親権者について、双方協議の上定める。',
+  };
+
+  const lines = [];
+  lines.push('離婚協議書（案）');
+  lines.push('');
+  lines.push(clientName + '（以下「甲」という。）と' + spouseName + '（以下「乙」という。）は、甲乙間の離婚及びこれに伴う諸条件について、以下のとおり合意する。');
+  lines.push('');
+
+  let sec = 1;
+  let missing = false;
+  POINT_DEFS.forEach(p => {
+    const finalEl = document.getElementById('finalTerm_' + p.key);
+    const finalVal = finalEl ? finalEl.value.trim() : '';
+    lines.push('第' + sec + '条（' + p.label.replace(/^[⑴⑵⑶⑷⑸⑹⑺]\s*/, '') + '）');
+    if (finalVal) {
+      lines.push(finalVal);
+    } else {
+      lines.push(FALLBACK[p.key]);
+      missing = true;
+    }
+    lines.push('');
+    sec++;
+  });
+
+  lines.push('第' + sec + '条（公正証書化）');
+  lines.push('甲及び乙は、本合意の内容を確実に履行するため、別途、本協議書の内容に基づく公正証書を作成するものとする。');
+  lines.push('');
+  lines.push('以上の合意の成立を証するため、本書を2部作成し、甲乙each1部を保有する。');
+  lines.push('');
+  lines.push(today);
+  lines.push('');
+  lines.push('甲（依頼者）　' + clientName + '　　　　　　　　　　印');
+  lines.push('乙（相手方）　' + spouseName + '　　　　　　　　　　印');
+
+  if (missing) {
+    lines.push('');
+    lines.push('※「最終合意内容」欄が未入力の項目は仮の条文になっています。送付前に各項目の最終合意内容をご確認・補完してください。');
+  }
+
+  document.getElementById('agreementOut').value = lines.join('\n');
+  document.getElementById('agreementWrap').style.display = 'block';
+  document.getElementById('agreementWrap').scrollIntoView({behavior:'smooth'});
+  addHistory('離婚協議書（案）を生成');
+  addDocumentArchive('sent', '離婚協議書（案）', document.getElementById('agreementOut').value);
+  persistCurrentCaseSnapshot();
+}
+
+function checked(issue){
+  return document.querySelector('input[data-issue="'+issue+'"]').checked;
+}
+
+function setIssue(issue, value){
+  const el = document.querySelector('input[data-issue="'+issue+'"]');
+  if (el) el.checked = value;
+}
+
+function toIsoDate(str){
+  if (!str) return '';
+  let m = str.match(/(\d{4})[年\/\-](\d{1,2})[月\/\-](\d{1,2})/);
+  if (m) return m[1] + '-' + m[2].padStart(2,'0') + '-' + m[3].padStart(2,'0');
+  return '';
+}
+
+function parseFreeText(){
+  const text = document.getElementById('freeText').value;
+  if (!text.trim()) return;
+
+  // 名前として使えない文字（区切り記号・括弧・コロン）
+  const NAME_CHARS = '[^\\s　、。\\/／\\n（）()｟｠:：]';
+  const NOT_PARTICLE = '(?!は|が|の|を|も|で|と|に|から|まで|という|らしい|って|だ|です)';
+  const GENERIC_WORDS = ['奥','旦那','相手','本人','相談者','クライアント','夫','妻','依頼者'];
+
+  function extractByLabels(labelAlt){
+    // 「（妻）」「(夫)」のような性別・属性の注記としての使用は除外し、
+    // ラベルが名前を導入する用法（直後にコロン・括弧・名前が続く）のみ採用する。
+    const re = new RegExp('(?:' + labelAlt + ')[:：]?\\s*' + NOT_PARTICLE + '(' + NAME_CHARS + '{1,8})');
+    const m = text.match(re);
+    if (!m) return '';
+    let cand = m[1];
+    if (GENERIC_WORDS.includes(cand)) return '';
+    // 「木村　美穂」のように姓と名の間に（全角）スペースが入る表記にも対応する。
+    // 直後の語が漢字・かな等のみで、かつその後に明確な区切り（句読点・括弧・さん／様・文末）が
+    // 続く場合に限り、姓に続く「名」として連結する（無関係な後続文への暴走を防ぐ）。
+    const rest = text.slice(m.index + m[0].length);
+    const givenMatch = rest.match(/^[ 　]([一-龠ぁ-んァ-ヶー]{1,8})(?=[、。\n（(:：]|さん|様|$)/);
+    if (givenMatch) cand += '　' + givenMatch[1];
+    return cand;
+  }
+
+  let clientName = extractByLabels('依頼者|相談者|クライアント');
+  let spouseName = extractByLabels('相手方|相手|旦那|夫|妻|奥さん');
+
+  if (!clientName) {
+    // ラベルが無い場合、最初の「○○さん／○○様」をクライアント名候補とする
+    const sanRe = new RegExp('(' + NAME_CHARS + '{1,8})(?:さん|様)');
+    const m = text.match(sanRe);
+    if (m && !GENERIC_WORDS.includes(m[1])) clientName = m[1];
+  }
+
+  if (clientName) document.getElementById('clientName').value = clientName;
+  if (spouseName) document.getElementById('spouseName').value = spouseName;
+
+  const marriageMatch = text.match(/婚姻[日)）]*[:：]?\s*([0-9０-９Ｈ-Ｒ年号RH令和平成\/\.\-]+)/);
+  const marriageIso = marriageMatch ? toIsoDate(marriageMatch[1]) : '';
+  if (marriageIso) document.getElementById('marriageDate').value = marriageIso;
+
+  // 「別居中」の明示があれば最優先（「子は依頼者と同居中」等、無関係な「同居中」に引っ張られないようにする）
+  // 次に「別居してない」等の否定表現を確認し、それ以外は「別居して」等の表現で判定
+  let separated;
+  if (/別居中/.test(text)) {
+    separated = true;
+  } else if (/別居[:：]?(?:して)?(?:い)?ない|まだ同居/.test(text)) {
+    separated = false;
+  } else {
+    separated = /別居している|別居開始|別居[:：]?して/.test(text);
+  }
+  document.getElementById('separation').value = separated ? 'separated' : 'none';
+  document.getElementById('separationDateWrap').style.display = separated ? 'block' : 'none';
+  if (separated) {
+    const sepMatch = text.match(/別居[^0-9０-９]{0,8}([0-9０-９Ｈ-Ｒ年号RH令和平成\/\.\-~〜]{4,})/);
+    const sepIso = sepMatch ? toIsoDate(sepMatch[1]) : '';
+    if (sepIso) document.getElementById('separationDate').value = sepIso;
+  }
+
+  const childrenNegative = /子.*いない|子.*なし|子.*成人/.test(text);
+  const hasChildrenMatch = !childrenNegative && /(?:子供|こども|子)[はがのもで：:]?\s*(?:\d+|[一二三四五六七八九])\s*人|子.*あり|子供.*いる|子.*未成年/.test(text);
+  document.getElementById('hasChildren').value = hasChildrenMatch ? 'yes' : 'no';
+  document.getElementById('childrenCountWrap').style.display = hasChildrenMatch ? 'block' : 'none';
+  const countMatch = text.match(/(?:子供|こども|子)[^\d]{0,4}(\d+)\s*人/);
+  if (countMatch) document.getElementById('childrenCount').value = countMatch[1];
+
+  const kw = (re) => re.test(text);
+  setIssue('infidelity', kw(/不貞|浮気|不倫/));
+  setIssue('dv', kw(/DV|モラハラ|モラルハラスメント/));
+  setIssue('abandonment', kw(/悪意の遺棄|生活費を渡さない|生活費の不払い|家出/));
+  setIssue('personality', kw(/性格の不一致|価値観の違い|価値観の相違/));
+  setIssue('addiction', kw(/ギャンブル|アルコール依存|薬物/));
+  setIssue('mental', kw(/精神病|精神疾患/));
+  setIssue('custody', kw(/親権/));
+  setIssue('visitation', kw(/面会交流/));
+  setIssue('support', kw(/養育費/));
+  setIssue('realestate', kw(/不動産|自宅|マンション|持ち家/));
+  setIssue('savings', kw(/預貯金|貯金|株式|証券/));
+  setIssue('debt', kw(/借金|ローン|負債/));
+  setIssue('business', kw(/自営業|会社経営|法人/));
+  setIssue('pension', kw(/年金分割/));
+  setIssue('alimony', kw(/慰謝料/));
+  setIssue('negotiation', kw(/協議/));
+  setIssue('mediation', kw(/調停/));
+  setIssue('litigation', kw(/訴訟|裁判/));
+  setIssue('urgent', kw(/緊急|身の安全|保護命令/));
+
+  // トピックの語の周辺にある「○万円」を全て探し、「希望」等の意向を示す語に
+  // 最も近いものを優先する（現在の支払額より依頼者の希望額を優先するため）
+  function extractDesiredAmount(keywordRe){
+    const topicMatch = text.match(keywordRe);
+    if (!topicMatch) return '';
+    const start = topicMatch.index;
+    const window = text.slice(start, start + 80);
+    const amountRe = /(\d+万円)/g;
+    const amounts = [];
+    let m;
+    while ((m = amountRe.exec(window))) amounts.push({ value: m[1], index: m.index });
+    if (!amounts.length) return '';
+    const wishRe = /希望|きぼう|欲しい|ほしい/g;
+    const wishPositions = [];
+    while ((m = wishRe.exec(window))) wishPositions.push(m.index);
+    if (wishPositions.length) {
+      amounts.sort((a, b) => {
+        const da = Math.min(...wishPositions.map(p => Math.abs(p - a.index)));
+        const db = Math.min(...wishPositions.map(p => Math.abs(p - b.index)));
+        return da - db;
+      });
+      return amounts[0].value;
+    }
+    return amounts[amounts.length - 1].value;
+  }
+
+  const alimonyAmt = extractDesiredAmount(/慰謝料/);
+  if (alimonyAmt) document.getElementById('alimonyAmount').value = alimonyAmt;
+  const supportAmt = extractDesiredAmount(/養育費/);
+  if (supportAmt) document.getElementById('childSupportAmount').value = supportAmt;
+  const livingAmt = extractDesiredAmount(/婚姻費用|生活費/);
+  if (livingAmt) document.getElementById('livingExpenseAmount').value = livingAmt;
+
+  document.getElementById('clientName').closest('.card').scrollIntoView({behavior:'smooth'});
+}
+
+function generate(){
+  const clientName = document.getElementById('clientName').value || '依頼者';
+  const spouseName = document.getElementById('spouseName').value || '相手方';
+  const separated = document.getElementById('separation').value === 'separated';
+  const hasChildren = document.getElementById('hasChildren').value === 'yes';
+
+  const docs = new Set();
+  const qas = [];
+
+  // ベース（全件共通）
+  docs.add('戸籍謄本（夫婦・子の記載があるもの）');
+  docs.add('住民票（依頼者・相手方）');
+  docs.add('依頼者の本人確認書類（運転免許証・マイナンバーカード等）');
+  docs.add('婚姻関係を裏付ける資料（結婚式・婚姻届の写し等、あれば）');
+
+  qas.push('結婚の経緯と、婚姻期間中の生活状況を教えてください。');
+  qas.push('離婚を考えるに至った主な経緯・きっかけは何ですか。');
+  qas.push('現在、相手方とは話し合いができる関係ですか（連絡可能か、弁護士が入ることへの反応等）。');
+  qas.push('離婚の方針として、まず協議・調停・訴訟のどれを希望しますか。');
+
+  if (separated) {
+    docs.add('別居の経緯・別居開始日を示す資料（賃貸契約書、転居の記録等）');
+    qas.push('別居開始日と、別居に至った経緯を教えてください。');
+    qas.push('別居後の生活費（婚姻費用）の負担状況はどうなっていますか。');
+  } else {
+    qas.push('現在同居中ですが、今後別居の予定はありますか（時期・方法）。');
+  }
+
+  if (hasChildren) {
+    docs.add('子の戸籍謄本・住民票（同居の有無を示す資料）');
+    qas.push('お子様の現在の年齢・就学状況・健康状態を教えてください。');
+    qas.push('お子様は現在どちらと同居していますか。');
+  }
+
+  if (checked('infidelity')) {
+    docs.add('不貞行為を示す証拠（写真・LINE等のメッセージ履歴・ホテルの利用記録・興信所調査報告書等）');
+    qas.push('不貞行為が発覚した経緯と時期、相手の素性が分かる情報を教えてください。');
+    qas.push('不貞行為を示す証拠（メッセージ、写真等）をすでにお持ちですか。');
+  }
+
+  if (checked('dv')) {
+    docs.add('DV・モラハラを示す証拠（診断書、写真、録音・録画データ、医療機関の受診記録等）');
+    docs.add('警察への相談・通報記録（あれば、相談票の写し等）');
+    qas.push('DV・モラハラの内容、発生時期・頻度・最近の状況を具体的に教えてください。');
+    qas.push('警察や医療機関に相談・受診したことはありますか。');
+    qas.push('現在、身の安全について不安はありますか（保護命令の検討要否）。');
+  }
+
+  if (checked('abandonment')) {
+    docs.add('生活費の不払いを示す資料（給与明細、振込記録、督促のやり取り等）');
+    qas.push('生活費が支払われなくなった時期と、その後の経緯を教えてください。');
+  }
+
+  if (checked('addiction')) {
+    qas.push('問題行動（暴力・ギャンブル・アルコール等）の具体的な内容と頻度、これまでの対応を教えてください。');
+  }
+
+  if (checked('custody')) {
+    qas.push('親権について、相手方の意向や監護に関する不安要素（虐待歴、養育環境等）はありますか。');
+    qas.push('現在の主たる監護者は誰ですか（保育園・学校への送迎、看病等の実績）。');
+  }
+
+  if (checked('visitation')) {
+    qas.push('面会交流について、希望する頻度・方法、注意すべき事情（DV歴等）はありますか。');
+  }
+
+  if (checked('support')) {
+    docs.add('依頼者・相手方双方の収入を示す資料（給与明細、源泉徴収票、確定申告書等）');
+    qas.push('養育費の算定に必要な、依頼者・相手方双方の年収・就労状況を教えてください。');
+    qas.push('希望する養育費の金額・支払方法（一括/分割）はありますか。');
+  }
+
+  if (checked('realestate')) {
+    docs.add('不動産の登記簿謄本（全部事項証明書）・固定資産評価証明書');
+    docs.add('不動産の購入時の契約書・ローン残高証明書');
+    qas.push('不動産（自宅等）の名義、購入時期・購入資金の出どころ、ローン残高を教えてください。');
+    qas.push('不動産の処分（売却・どちらかが住み続ける等）についてご希望はありますか。');
+  }
+
+  if (checked('savings')) {
+    docs.add('預貯金口座の取引履歴・残高証明書（婚姻時・別居時・現在）');
+    docs.add('証券・保険等の資産を示す資料');
+    qas.push('依頼者・相手方名義の預貯金、証券、保険等の資産状況（婚姻時・別居時点）を教えてください。');
+  }
+
+  if (checked('debt')) {
+    docs.add('債務に関する資料（ローン契約書、借入残高がわかる書面等）');
+    qas.push('夫婦の生活のために生じた債務（ローン・借金）の内容と残額を教えてください。');
+  }
+
+  if (checked('business')) {
+    docs.add('事業用資産・決算書・確定申告書（自営業・会社経営の場合）');
+    qas.push('事業・会社の資産（株式・出資、事業用不動産等）の状況を教えてください。');
+  }
+
+  if (checked('pension')) {
+    docs.add('年金分割のための情報通知書（年金事務所で取得）');
+    qas.push('年金分割の対象となる年金（厚生年金等）の加入状況を確認できますか。');
+  }
+
+  if (checked('alimony')) {
+    qas.push('慰謝料を請求する根拠となる事実（不貞・DV等）と、被った精神的苦痛の内容を具体的に教えてください。');
+    qas.push('希望する慰謝料の金額の目安はありますか。');
+  }
+
+  if (checked('negotiation')) {
+    qas.push('協議離婚を進める場合、相手方との連絡方法（直接/代理人経由）に希望はありますか。');
+  }
+
+  if (checked('mediation')) {
+    docs.add('調停申立てに必要な事情説明書記載事項の整理メモ');
+    qas.push('調停を申し立てる場合、希望する管轄裁判所（相手方の住所地等）を確認できますか。');
+  }
+
+  if (checked('litigation')) {
+    qas.push('訴訟になった場合の主張立証の見通しについて、現時点で把握している証拠関係を教えてください。');
+  }
+
+  if (checked('urgent')) {
+    qas.push('緊急性の高い事情（身の安全、子の引渡し等）があれば、最優先で対応すべき点を教えてください。');
+  }
+
+  // --- 付随情報の取得 ---
+  const spouseAddress = document.getElementById('spouseAddress').value || '（送付先住所未記入）';
+  const replyDays = document.getElementById('replyDays').value || '14';
+  const livingExpenseAmount = document.getElementById('livingExpenseAmount').value;
+  const childSupportAmount = document.getElementById('childSupportAmount').value;
+  const alimonyAmount = document.getElementById('alimonyAmount').value;
+  const propertyDivisionNote = document.getElementById('propertyDivisionNote').value;
+  const firmName = document.getElementById('firmName').value || '○○法律事務所';
+  const lawyerName = document.getElementById('lawyerName').value || '弁護士　○○　○○';
+  const firmContact = document.getElementById('firmContact').value || 'TEL ○○-○○○○-○○○○';
+  const firmAddress = document.getElementById('firmAddress').value || '（事務所住所未記入）';
+  const today = new Date().toLocaleDateString('ja-JP');
+
+  const hasFaultGround = checked('infidelity') || checked('dv') || checked('abandonment') || checked('addiction') || checked('mental');
+  const hasProperty = checked('realestate') || checked('savings') || checked('debt') || checked('business');
+  const wantsAlimony = checked('alimony') || checked('infidelity') || checked('dv');
+
+  // --- ① 7項目サマリー ---
+  const points = [];
+  points.push(['⑴ 離婚するか',
+    '依頼者は離婚を求める方針。' + (hasFaultGround ? '法定離婚原因（5号「その他婚姻を継続し難い重大な事由」等）の主張を検討。' : '主たる原因事実が明確でないため、まずは協議離婚を試み、不成立の場合は調停を検討。')]);
+  points.push(['⑵ 婚姻費用',
+    separated ? '別居中のため、合意又は調停で婚姻費用の分担を確保する必要あり。' + (livingExpenseAmount ? '依頼者希望額：月額' + livingExpenseAmount + '。' : '算定表に基づき希望額を確認予定。') : '同居中のため現時点では婚姻費用の問題は生じないが、別居開始時は別途検討。']);
+  points.push(['⑶ 養育費',
+    hasChildren ? (checked('support') ? '養育費の取り決めが必要。算定表を基準に協議。' + (childSupportAmount ? '依頼者希望額：月額' + childSupportAmount + '。' : '') : '子はいるが養育費の取り決め要否を依頼者に確認する必要あり。') : '未成年の子がいないため対象外。']);
+  points.push(['⑷ 財産分与',
+    hasProperty ? '対象財産（不動産・預貯金・債務等）の開示を受け、2分の1ルールを原則に分与方法を検討。' + (propertyDivisionNote ? '依頼者希望：' + propertyDivisionNote + '。' : '') : '現時点で分与対象となる財産の報告がないため、財産開示の聴取が必要。']);
+  points.push(['⑸ 慰謝料',
+    wantsAlimony ? '不貞・DV等の事実関係及び証拠の有無を精査の上、相当額を算定し請求。' + (alimonyAmount ? '依頼者希望額：' + alimonyAmount + '。' : '') : '現時点で慰謝料請求の根拠となる事実の申告なし。聴取により要否を再確認。']);
+  points.push(['⑹ 年金分割',
+    checked('pension') ? '年金分割（合意分割）を希望。年金事務所で情報通知書を取得し、分割割合（原則0.5）を協議。' : '年金分割の希望の有無を確認する必要あり。']);
+  points.push(['⑺ 親権',
+    hasChildren ? (checked('custody') ? '親権について争いが生じる可能性あり。主たる監護者・監護の継続性・子の意思等を踏まえて主張を構成。' : '親権について争いは想定されていないが、念のため監護状況を確認。') : '未成年の子がいないため対象外。']);
+
+  const pointsBody = document.getElementById('pointsBody');
+  pointsBody.innerHTML = '';
+  points.forEach(p=>{
+    const tr = document.createElement('tr');
+    const th = document.createElement('th');
+    th.textContent = p[0];
+    const td = document.createElement('td');
+    td.textContent = p[1];
+    tr.appendChild(th); tr.appendChild(td);
+    pointsBody.appendChild(tr);
+  });
+
+  // --- ② 出力ヘッダ ---
+  document.getElementById('summaryHead').textContent =
+    '依頼者：' + clientName + ' ／ 相手方：' + spouseName +
+    ' ／ ' + (separated ? '別居中' : '同居中') +
+    ' ／ 未成年の子：' + (hasChildren ? 'あり' : 'なし') +
+    ' ／ 作成日：' + today;
+
+  renderDocList([...docs], {});
+
+  const qaList = document.getElementById('qaList');
+  qaList.innerHTML = '';
+  qas.forEach(q=>{
+    const li = document.createElement('li');
+    li.textContent = q;
+    qaList.appendChild(li);
+  });
+
+  // --- ③ 法的見通しメモ ---
+  const memoLines = [];
+  memoLines.push('【法的見通し検討メモ（依頼者説明・内部検討用）】');
+  memoLines.push('作成日：' + today);
+  memoLines.push('依頼者：' + clientName + '　／　相手方：' + spouseName);
+  memoLines.push('');
+  memoLines.push('■ 離婚原因の見通し');
+  if (hasFaultGround) {
+    const grounds = [];
+    if (checked('infidelity')) grounds.push('不貞行為（民法770条1項1号）');
+    if (checked('dv')) grounds.push('DV・モラハラ（同項5号「その他婚姻を継続し難い重大な事由」）');
+    if (checked('abandonment')) grounds.push('悪意の遺棄（同項2号）');
+    if (checked('addiction')) grounds.push('問題行動の常習性（同項5号該当の余地）');
+    if (checked('mental')) grounds.push('強度の精神病その他重大事由（同項4号・5号）');
+    memoLines.push('主張可能な法定離婚原因として、' + grounds.join('、') + 'が想定される。ただし、いずれも立証（証拠）の充実度により認定の確度が変わるため、客観的証拠（メッセージ、写真、診断書、第三者証言等）の収集状況を確認の上、立証方針を確定する必要がある。');
+    if (checked('infidelity')) memoLines.push('不貞については、性的関係を直接・間接に推認させる証拠（宿泊記録、メッセージ内容等）の有無が立証上の最大のポイントとなる。');
+    if (checked('dv')) memoLines.push('DV・モラハラについては、診断書・写真・録音等の客観的資料に加え、発生頻度・継続性を示す記録（日記、相談記録等）の有無を確認する。身の安全に懸念がある場合は保護命令の要否も併せて検討する。');
+  } else {
+    memoLines.push('現時点で申告された事情からは法定離婚原因に直結する事実は明確でなく、性格の不一致等を理由とする協議離婚を基本線とする。相手方が離婚に同意しない場合は、調停を経て、訴訟においては「婚姻を継続し難い重大な事由」の主張立証が必要となる見通し。');
+  }
+  memoLines.push('');
+  memoLines.push('■ 婚姻費用・養育費の見通し');
+  if (separated) {
+    memoLines.push('別居中であるため、離婚成立までの間、婚姻費用分担請求（民法752条、家事事件手続法）が可能。標準的算定方式（簡易算定表）により、双方の年収・子の数・年齢を基礎に算定される。' + (livingExpenseAmount ? '依頼者希望額（月額' + livingExpenseAmount + '）との整合性は、双方の収入資料確認後に検証する。' : '依頼者・相手方双方の収入資料の確認が先決事項となる。'));
+  } else {
+    memoLines.push('現時点で別居していないため婚姻費用の問題は生じていないが、別居開始と同時に分担請求権が発生する点を依頼者に説明済みとする。');
+  }
+  if (hasChildren) {
+    memoLines.push('養育費についても標準算定方式に基づく算定が原則であり、' + (checked('custody') ? '親権・監護権の帰属先によって算定の前提（監護親・非監護親）が変動する。' : '親権者を依頼者とする前提で算定するのが現時点の方針となる。'));
+  }
+  memoLines.push('');
+  memoLines.push('■ 財産分与の見通し');
+  if (hasProperty) {
+    memoLines.push('財産分与は、婚姻中に形成された財産を対象に、原則2分の1の割合で分与するのが裁判実務上の原則（最高裁判例の考え方に準拠）。特有財産（婚姻前の財産・相続財産等）に該当する部分は対象外となるため、取得時期・原資の確認が必要。' + (checked('debt') ? '債務についても財産分与の清算的要素として考慮する必要があり、生活費に起因する債務かどうかを精査する。' : '') + (checked('business') ? '事業用資産・会社株式が存在する場合、評価方法（純資産方式等）について専門的検討が必要となる可能性がある。' : ''));
+  } else {
+    memoLines.push('現時点で対象となる財産の報告がなく、財産分与の見通しを立てるには、依頼者・相手方双方の財産状況（不動産、預貯金、保険、債務等）の聴取・開示が必要。');
+  }
+  memoLines.push('');
+  memoLines.push('■ 慰謝料の見通し');
+  if (wantsAlimony) {
+    memoLines.push('離婚慰謝料の相場は事案の内容（不貞の期間・態様、DVの程度等）により大きく異なり、一般的には数十万円～300万円程度の範囲で認定される例が多い。' + (alimonyAmount ? '依頼者希望額（' + alimonyAmount + '）は、相場感や証拠の充実度を踏まえて協議・調停の場で柔らかく主張する方針とし、相手方の反応を見て調整する。' : '具体的な希望額は証拠関係を踏まえて改めて協議する。'));
+  } else {
+    memoLines.push('現時点で慰謝料請求の根拠となる具体的事実の申告がないため、請求の要否について改めて聴取の上判断する。');
+  }
+  memoLines.push('');
+  memoLines.push('■ 年金分割の見通し');
+  memoLines.push(checked('pension') ? '厚生年金等の保険料納付実績がある場合、合意分割（原則0.5）の対象となる。年金事務所で「年金分割のための情報通知書」を取得し、分割対象期間・按分割合を確定させる必要がある。' : '年金分割の希望や年金加入状況が未確認のため、依頼者に確認の上、必要に応じて情報通知書を取得する。');
+  memoLines.push('');
+  memoLines.push('■ 親権の見通し');
+  if (hasChildren) {
+    memoLines.push(checked('custody') ? '親権が争点となる場合、実務上は「主たる監護者」「監護の継続性」「子の意思（年齢相応）」「監護環境の安定性」等を総合的に考慮して判断される。現時点の監護状況（誰が日常的な世話をしているか）の整理が主張構成上重要となる。' : '現時点では親権について争いは想定されないが、相手方の対応によっては争点化する可能性もあるため、監護実績の記録化を依頼者に助言する。');
+  } else {
+    memoLines.push('未成年の子がいないため親権の問題は生じない。');
+  }
+  memoLines.push('');
+  memoLines.push('■ 進行方針');
+  if (checked('urgent')) {
+    memoLines.push('身の安全等緊急性の高い事情があるため、保護命令の申立てや別居の支援（シェルター等の情報提供）を優先的に検討する。');
+  }
+  if (checked('litigation')) {
+    memoLines.push('協議・調停が不成立となった場合は訴訟移行を想定し、立証計画（証拠収集・主張整理）を早期に準備する。');
+  } else if (checked('mediation')) {
+    memoLines.push('調停を中心に進める方針。家庭裁判所の管轄・申立書類の準備を進める。');
+  } else {
+    memoLines.push('まずは受任通知の送付による協議から開始し、相手方の対応を見て調停移行の要否を判断する。');
+  }
+  memoLines.push('');
+  memoLines.push('※本メモは聴取段階の限られた情報に基づく一般的な見通しであり、証拠関係の精査・追加の聴取結果により結論が変わり得る暫定的な検討メモである。');
+
+  document.getElementById('memoOut').value = memoLines.join('\n');
+
+  // --- ④ 受任通知・初回請求書面ドラフト ---
+  const letterLines = [];
+  letterLines.push(today);
+  letterLines.push('');
+  letterLines.push(spouseAddress);
+  letterLines.push(spouseName + '　様');
+  letterLines.push('');
+  letterLines.push(firmAddress);
+  letterLines.push(firmName);
+  letterLines.push(lawyerName);
+  letterLines.push(firmContact);
+  letterLines.push('');
+  letterLines.push('　　　　　　　　　　　　　　　　通　知　書');
+  letterLines.push('');
+  letterLines.push('前略　突然のご連絡となり恐縮ですが、当職は、貴殿の配偶者である' + clientName + '様（以下「依頼者」といいます。）より、貴殿との離婚に関する件につき委任を受けましたので、本書面をもってご通知申し上げます。');
+  letterLines.push('今後、本件に関するご連絡・お問い合わせは、依頼者本人ではなく、下記当職宛にいただきますようお願い申し上げます。');
+  letterLines.push('');
+  letterLines.push('第1　離婚の請求');
+  letterLines.push('依頼者は、貴殿との離婚を求めます。');
+  letterLines.push('');
+
+  let sec = 2;
+  if (separated) {
+    letterLines.push('第' + sec + '　婚姻費用の分担');
+    letterLines.push('依頼者は現在貴殿と別居しておりますので、離婚成立に至るまでの間の婚姻費用の分担を求めます。' + (livingExpenseAmount ? '具体的には、月額' + livingExpenseAmount + 'を目安とした分担をお願いいたします。' : '標準算定方式に基づく適正額について、双方の収入資料を踏まえてご回答ください。'));
+    letterLines.push('');
+    sec++;
+  }
+  if (hasChildren) {
+    letterLines.push('第' + sec + '　養育費');
+    letterLines.push('お子様の養育費につきましては、標準算定方式を踏まえ、' + (childSupportAmount ? '月額' + childSupportAmount + 'を目安として協議させていただきたく存じます。' : '双方の年収等の資料を確認した上で、改めて具体的な金額をご提案いたします。'));
+    letterLines.push('');
+    sec++;
+  }
+  letterLines.push('第' + sec + '　財産分与');
+  letterLines.push('婚姻中に形成された財産（不動産、預貯金、保険、その他資産及び債務）につきまして、財産分与のご協議をお願いいたします。' + (propertyDivisionNote ? '依頼者としては、' + propertyDivisionNote + 'を希望しております。' : '貴殿が把握している財産の開示についてもご協力をお願いいたします。'));
+  letterLines.push('');
+  sec++;
+  if (wantsAlimony) {
+    letterLines.push('第' + sec + '　慰謝料');
+    letterLines.push('依頼者は、本件離婚に至る事情により多大な精神的苦痛を受けております。これにつき、慰謝料として' + (alimonyAmount ? alimonyAmount : '相当額') + 'のお支払いを求めます。');
+    letterLines.push('');
+    sec++;
+  }
+  if (checked('pension')) {
+    letterLines.push('第' + sec + '　年金分割');
+    letterLines.push('年金分割（合意分割）の手続につきましても、原則どおりの割合（0.5）にて分割することにご同意いただきますようお願いいたします。');
+    letterLines.push('');
+    sec++;
+  }
+  if (hasChildren) {
+    letterLines.push('第' + sec + '　親権');
+    letterLines.push('お子様の親権につきましては、依頼者が取得することを希望いたします。' + (checked('custody') ? 'この点につきご異論がある場合には、現在の監護状況等を踏まえ、改めて協議させていただきたく存じます。' : ''));
+    letterLines.push('');
+    sec++;
+  }
+
+  letterLines.push('以上の各事項につきまして、本書面到達後' + replyDays + '日以内に、当職宛にご回答くださいますようお願い申し上げます。');
+  letterLines.push('期間内に誠意あるご回答をいただけない場合には、家庭裁判所への調停申立て等、法的手続に移行させていただく場合がございますので、あらかじめご了承おきください。');
+  letterLines.push('');
+  letterLines.push('草々');
+
+  document.getElementById('letterOut').value = letterLines.join('\n');
+
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('result').scrollIntoView({behavior:'smooth'});
+
+  addHistory('チェックリスト・聴取事項・請求書面を生成');
+  addNegotiationSnapshot('初回請求書面を生成');
+  addDocumentArchive('sent', '受任通知・初回請求書面', document.getElementById('letterOut').value);
+  persistCurrentCaseSnapshot();
+}
+
+function downloadAsWord(textareaId, filename){
+  const text = document.getElementById(textareaId).value;
+  if (!text.trim()) { alert('出力内容がありません。先に書面を生成してください。'); return; }
+  const escaped = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  const html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
+    '<head><meta charset="utf-8"><style>body{font-family:"Yu Mincho","MS Mincho",serif;font-size:10.5pt;line-height:1.8;}</style></head>' +
+    '<body>' + escaped + '</body></html>';
+  const blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+function copyArea(id){
+  const el = document.getElementById(id);
+  el.select();
+  document.execCommand('copy');
+}
+
+// ============ プレゼン用ダミーデータ ============
+function seedDemoData(){
+  const store = loadCaseStore();
+
+  Object.keys(store).forEach(id => { if (store[id].label === '保存テスト用１' || store[id].label === '保存テスト用1') delete store[id]; });
+
+  if (!localStorage.getItem('divorceDemoSeeded_v2')) {
+    const commonFirm = {
+      firmName: '○○法律事務所',
+      lawyerName: '弁護士　検証太郎',
+      firmContact: 'TEL 03-0000-0000／FAX 03-0000-0001',
+      firmAddress: '東京都千代田区○○4-5-6　○○ビル3階',
+      replyDays: '14',
+    };
+
+    function makeDocs(items, doneCount){
+      const docTasks = {};
+      items.forEach((d, i) => { docTasks[d] = i < doneCount; });
+      return { docListItems: items, docTasks };
+    }
+
+    const docsBase = [
+      '戸籍謄本（夫婦・子の記載があるもの）',
+      '住民票（依頼者・相手方）',
+      '依頼者の本人確認書類（運転免許証・マイナンバーカード等）',
+      '別居の経緯・別居開始日を示す資料（賃貸契約書、転居の記録等）',
+      '不貞行為を示す証拠（写真・LINE等のメッセージ履歴等）',
+      '依頼者・相手方双方の収入を示す資料（給与明細、源泉徴収票等）',
+      '不動産の登記簿謄本（全部事項証明書）・固定資産評価証明書',
+      '年金分割のための情報通知書（年金事務所で取得）',
+    ];
+
+    const demoCases = [
+      {
+        id: 'demo_case_a',
+        label: '佐藤様　離婚事件（交渉中）',
+        savedAt: '2026/6/15 10:00:00',
+        data: Object.assign({}, commonFirm, {
+          clientName: '佐藤　恵子', spouseName: '佐藤　健一',
+          marriageDate: '2014-05-10', separation: 'separated', separationDate: '2025-03-01',
+          hasChildren: 'yes', childrenCount: '1',
+          spouseAddress: '東京都○○区○○1-2-3',
+          livingExpenseAmount: '10万円', childSupportAmount: '5万円', alimonyAmount: '100万円',
+          propertyDivisionNote: '自宅は売却し、ローン残債清算後の差額を折半',
+          caseStatus: 'negotiating', nextDeadline: '2026-06-20',
+          issues: { infidelity: true, support: true, realestate: true, pension: true, alimony: true, negotiation: true },
+          opponentStatus: { divorce: 'agree', living: 'dispute', support: 'dispute', property: 'conditional', alimony: 'dispute', pension: 'agree', custody: 'agree' },
+          opponentNote: { living: '月5万円のみ提示', support: '月3万円を提示', property: '売却には応じるが分与比率に異論あり', alimony: '50万円を提示' },
+          memoOut: '【法的見通し検討メモ】\n依頼者：佐藤　恵子／相手方：佐藤　健一\n不貞行為を理由とする離婚を主張。婚姻費用・養育費は相手方提示額との差が大きく、証拠関係を精査の上、調停も視野に交渉を継続する方針。',
+          letterOut: '受任通知・初回請求書面（ドラフト）\n依頼者佐藤恵子様の代理人として、離婚・婚姻費用（月10万円）・養育費（月5万円）・財産分与・慰謝料（100万円）・年金分割についてご通知します。',
+          rebuttalOut: '反論書面（ドラフト）\n婚姻費用・養育費・慰謝料について、相手方提示額は依頼者の希望と大きく異なるため、根拠資料の開示を求める。',
+        }, makeDocs(docsBase, 4)),
+        history: [
+          { time: '2026/6/15 10:00:00', label: 'チェックリスト・聴取事項・請求書面を生成' },
+          { time: '2026/6/20 14:00:00', label: '相手方からの回答を反映' },
+          { time: '2026/6/20 14:05:00', label: '反論書面を生成' },
+        ],
+        negotiationLog: [
+          { time: '2026/6/15 10:00:00', label: '初回請求書面を生成', living: '10万円', livingNote: '', support: '5万円', supportNote: '', alimony: '100万円', alimonyNote: '' },
+          { time: '2026/6/20 14:05:00', label: '反論書面を生成', living: '10万円', livingNote: '月5万円のみ提示', support: '5万円', supportNote: '月3万円を提示', alimony: '100万円', alimonyNote: '50万円を提示' },
+        ],
+        documentArchive: [
+          { time: '2026/6/15 10:00:00', direction: 'sent', title: '受任通知・初回請求書面', text: '受任通知・初回請求書面（ドラフト）\n依頼者佐藤恵子様の代理人として、離婚・婚姻費用（月10万円）・養育費（月5万円）・財産分与・慰謝料（100万円）・年金分割についてご通知します。' },
+          { time: '2026/6/20 14:00:00', direction: 'received', title: '相手方からの回答書', text: '離婚自体には応じます。婚姻費用は月5万円のみ、養育費は月3万円を提示します。財産分与の売却には応じますが分与比率には異論があります。慰謝料は50万円であれば応じます。年金分割は異議ありません。' },
+          { time: '2026/6/20 14:05:00', direction: 'sent', title: '反論書面', text: '反論書面（ドラフト）\n婚姻費用・養育費・慰謝料について、相手方提示額は依頼者の希望と大きく異なるため、根拠資料の開示を求める。' },
+        ],
+      },
+      {
+        id: 'demo_case_b',
+        label: '高橋様　離婚事件（相手方回答待ち）',
+        savedAt: '2026/6/24 11:30:00',
+        data: Object.assign({}, commonFirm, {
+          clientName: '高橋　直美', spouseName: '高橋　拓也',
+          marriageDate: '2017-09-01', separation: 'separated', separationDate: '2026-01-10',
+          hasChildren: 'no',
+          spouseAddress: '東京都○○区○○4-5-6',
+          livingExpenseAmount: '8万円',
+          caseStatus: 'waiting', nextDeadline: '2026-06-28',
+          issues: { personality: true, negotiation: true },
+          memoOut: '【法的見通し検討メモ】\n依頼者：高橋　直美／相手方：高橋　拓也\n性格の不一致を理由とする協議離婚を基本線とし、まずは受任通知の送付による協議から開始する方針。',
+          letterOut: '受任通知・初回請求書面（ドラフト）\n依頼者高橋直美様の代理人として、離婚及び婚姻費用（月8万円）についてご通知します。本書面到達後14日以内にご回答ください。',
+        }, makeDocs(docsBase.slice(0,5), 3)),
+        history: [
+          { time: '2026/6/24 11:30:00', label: 'チェックリスト・聴取事項・請求書面を生成' },
+        ],
+        negotiationLog: [
+          { time: '2026/6/24 11:30:00', label: '初回請求書面を生成', living: '8万円', livingNote: '', support: '', supportNote: '', alimony: '', alimonyNote: '' },
+        ],
+        documentArchive: [
+          { time: '2026/6/24 11:30:00', direction: 'sent', title: '受任通知・初回請求書面', text: '受任通知・初回請求書面（ドラフト）\n依頼者高橋直美様の代理人として、離婚及び婚姻費用（月8万円）についてご通知します。本書面到達後14日以内にご回答ください。' },
+        ],
+      },
+      {
+        id: 'demo_case_c',
+        label: '木村様　離婚事件（調停中）',
+        savedAt: '2026/6/10 9:00:00',
+        data: Object.assign({}, commonFirm, {
+          clientName: '木村　裕子', spouseName: '木村　正人',
+          marriageDate: '2012-04-20', separation: 'separated', separationDate: '2025-10-01',
+          hasChildren: 'yes', childrenCount: '2',
+          spouseAddress: '東京都○○区○○3-4-5',
+          livingExpenseAmount: '18万円', childSupportAmount: '10万円', alimonyAmount: '300万円',
+          propertyDivisionNote: '自宅は売却し折半。実家近くの土地は対象外。',
+          caseStatus: 'mediation', nextDeadline: '2026-07-15',
+          issues: { infidelity: true, custody: true, support: true, realestate: true, pension: true, alimony: true, mediation: true },
+          memoOut: '【法的見通し検討メモ】\n依頼者：木村　裕子／相手方：木村　正人\n協議では合意に至らず、調停移行。次回調停期日に向けて主張整理を進める。',
+          letterOut: '受任通知・初回請求書面（ドラフト）\n依頼者木村裕子様の代理人として、離婚・婚姻費用・養育費・財産分与・慰謝料・年金分割・親権についてご通知します。',
+        }, makeDocs(docsBase, 5)),
+        history: [
+          { time: '2026/6/10 9:00:00', label: 'チェックリスト・聴取事項・請求書面を生成' },
+          { time: '2026/6/18 13:00:00', label: '相手方からの回答を反映' },
+        ],
+        negotiationLog: [
+          { time: '2026/6/10 9:00:00', label: '初回請求書面を生成', living: '18万円', livingNote: '', support: '10万円', supportNote: '', alimony: '300万円', alimonyNote: '' },
+        ],
+        documentArchive: [
+          { time: '2026/6/10 9:00:00', direction: 'sent', title: '受任通知・初回請求書面', text: '受任通知・初回請求書面（ドラフト）\n依頼者木村裕子様の代理人として、離婚・婚姻費用・養育費・財産分与・慰謝料・年金分割・親権についてご通知します。' },
+          { time: '2026/6/18 13:00:00', direction: 'received', title: '相手方代理人からの回答書', text: '離婚自体には異論ありません。婚姻費用・養育費・慰謝料については、依頼者提示額との差が大きく、協議が難航しています。調停での解決を希望します。' },
+        ],
+      },
+      {
+        id: 'demo_case_d',
+        label: '中村様　離婚事件（示談成立）',
+        savedAt: '2026/6/5 16:00:00',
+        data: Object.assign({}, commonFirm, {
+          clientName: '中村　さゆり', spouseName: '中村　大輔',
+          marriageDate: '2010-11-03', separation: 'separated', separationDate: '2025-06-01',
+          hasChildren: 'yes', childrenCount: '1',
+          spouseAddress: '東京都○○区○○7-8-9',
+          livingExpenseAmount: '12万円', childSupportAmount: '6万円', alimonyAmount: '150万円',
+          propertyDivisionNote: '自宅は売却し折半',
+          caseStatus: 'settled', nextDeadline: '',
+          issues: { infidelity: true, support: true, realestate: true, pension: true, alimony: true, custody: true, negotiation: true },
+          opponentStatus: { divorce: 'agree', living: 'agree', support: 'agree', property: 'agree', alimony: 'agree', pension: 'agree', custody: 'agree' },
+          opponentNote: { living: '月12万円で合意', support: '月6万円で合意', alimony: '150万円で合意' },
+          finalTerms: {
+            divorce: '甲と中村大輔（乙）は、協議離婚することに合意する。',
+            living: '離婚成立までの婚姻費用は、月額12万円とする。',
+            support: '子1名の養育費は、月額6万円とする。',
+            property: '自宅は売却し、ローン残債清算後の差額を2分の1ずつ取得する。',
+            alimony: '乙は甲に対し、慰謝料として150万円を支払う。',
+            pension: '年金分割（合意分割）の按分割合を0.5とする。',
+            custody: '未成年の子の親権者は甲と定める。',
+          },
+          memoOut: '【法的見通し検討メモ】\n依頼者：中村　さゆり／相手方：中村　大輔\n交渉により全項目で合意に至り、示談成立。離婚協議書（公正証書）の作成手続に移行。',
+          letterOut: '受任通知・初回請求書面（ドラフト）\n依頼者中村さゆり様の代理人として、離婚・婚姻費用・養育費・財産分与・慰謝料・年金分割・親権についてご通知します。',
+          rebuttalOut: '確認書面（ドラフト）\n貴職よりいただきました譲歩案につき、依頼者と協議の上、合意する意向を確認しましたので、以下のとおり最終合意内容を確認いたします。',
+          agreementOut: '離婚協議書（案）\n\n中村　さゆり（以下「甲」という。）と中村　大輔（以下「乙」という。）は、甲乙間の離婚及びこれに伴う諸条件について、以下のとおり合意する。\n\n第1条（離婚）\n甲と中村大輔（乙）は、協議離婚することに合意する。\n\n第2条（婚姻費用）\n離婚成立までの婚姻費用は、月額12万円とする。\n\n第3条（養育費）\n子1名の養育費は、月額6万円とする。\n\n第4条（財産分与）\n自宅は売却し、ローン残債清算後の差額を2分の1ずつ取得する。\n\n第5条（慰謝料）\n乙は甲に対し、慰謝料として150万円を支払う。\n\n第6条（年金分割）\n年金分割（合意分割）の按分割合を0.5とする。\n\n第7条（親権）\n未成年の子の親権者は甲と定める。\n\n第8条（公正証書化）\n甲及び乙は、本合意の内容を確実に履行するため、別途、本協議書の内容に基づく公正証書を作成するものとする。\n\n以上の合意の成立を証するため、本書を2部作成し、甲乙each1部を保有する。\n\n2026/8/5\n\n甲（依頼者）　中村　さゆり　　　　　　　　　　印\n乙（相手方）　中村　大輔　　　　　　　　　　印',
+        }, makeDocs(docsBase, docsBase.length)),
+        history: [
+          { time: '2026/6/5 16:00:00', label: 'チェックリスト・聴取事項・請求書面を生成' },
+          { time: '2026/6/15 10:00:00', label: '相手方からの回答を反映' },
+          { time: '2026/6/15 10:10:00', label: '反論書面を生成' },
+          { time: '2026/6/22 15:00:00', label: '離婚協議書（案）を生成' },
+        ],
+        negotiationLog: [
+          { time: '2026/6/5 16:00:00', label: '初回請求書面を生成', living: '12万円', livingNote: '', support: '6万円', supportNote: '', alimony: '150万円', alimonyNote: '' },
+          { time: '2026/6/15 10:10:00', label: '反論書面を生成', living: '12万円', livingNote: '月12万円で合意', support: '6万円', supportNote: '月6万円で合意', alimony: '150万円', alimonyNote: '150万円で合意' },
+        ],
+        documentArchive: [
+          { time: '2026/6/5 16:00:00', direction: 'sent', title: '受任通知・初回請求書面', text: '受任通知・初回請求書面（ドラフト）\n依頼者中村さゆり様の代理人として、離婚・婚姻費用・養育費・財産分与・慰謝料・年金分割・親権についてご通知します。' },
+          { time: '2026/6/12 9:00:00', direction: 'received', title: '相手方代理人からの回答書（第1回）', text: '離婚・年金分割・親権には異議ありません。婚姻費用は月8万円、養育費は月6万円、慰謝料は100万円であれば応じます。自宅の売却には応じません。' },
+          { time: '2026/6/15 10:10:00', direction: 'sent', title: '確認書面', text: '確認書面（ドラフト）\n貴職よりいただきました譲歩案につき、依頼者と協議の上、合意する意向を確認しましたので、以下のとおり最終合意内容を確認いたします。' },
+          { time: '2026/6/20 11:00:00', direction: 'received', title: '相手方代理人からの回答書（第2回・譲歩案）', text: '婚姻費用は月12万円、養育費は月6万円、慰謝料は150万円であれば応じます。自宅売却差額は折半に同意します。' },
+          { time: '2026/6/22 15:00:00', direction: 'sent', title: '離婚協議書（案）', text: '離婚協議書（案）\n\n中村　さゆり（以下「甲」という。）と中村　大輔（以下「乙」という。）は、甲乙間の離婚及びこれに伴う諸条件について、以下のとおり合意する。（以下、全7条＋公正証書化条項）' },
+        ],
+      },
+    ];
+
+    demoCases.forEach(c => {
+      store[c.id] = { label: c.label, savedAt: c.savedAt, data: c.data, history: c.history, negotiationLog: c.negotiationLog, documentArchive: c.documentArchive || [] };
+    });
+
+    localStorage.setItem('divorceDemoSeeded_v2', '1');
+  }
+
+  saveCaseStore(store);
+}
+
+seedDemoData();
+renderOpponentTable();
+refreshCaseSelect();
+renderHistory();
+renderNegotiationLog();
+renderDocumentArchive();
+renderDashboard();
+</script>
+
+</body>
+</html>
