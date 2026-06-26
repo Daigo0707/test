@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>債務整理コールセンター A/Bテスト分析ダッシュボード｜AdIre法律事務所</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --navy:#0f2c4c;
+    --blue:#1c6dd0;
+    --accent:#e8852b;
+    --green:#1f9d6b;
+    --bg:#f5f7fa;
+    --text:#26303a;
+    --muted:#5f6b78;
+    --line:#e2e8f0;
+    --cardA:#7c8aa3;
+    --cardB:#1c6dd0;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;color:var(--text);background:var(--bg);line-height:1.7}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+  header{background:var(--navy);color:#fff;padding:28px 0}
+  header h1{font-size:1.5rem;font-weight:800;margin-bottom:4px}
+  header p{font-size:.85rem;color:#cfd9e8}
+  main{padding:32px 0 64px}
+  section{margin-bottom:36px}
+  h2.sec-title{font-size:1.15rem;font-weight:800;color:var(--navy);margin-bottom:14px;border-left:5px solid var(--accent);padding-left:10px}
+  .grid{display:grid;gap:16px}
+  .grid-4{grid-template-columns:repeat(4,1fr)}
+  .grid-2{grid-template-columns:repeat(2,1fr)}
+  @media(max-width:900px){.grid-4{grid-template-columns:repeat(2,1fr)}.grid-2{grid-template-columns:1fr}}
+  @media(max-width:560px){.grid-4{grid-template-columns:1fr}}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .kpi .label{font-size:.78rem;color:var(--muted);font-weight:600;margin-bottom:6px}
+  .kpi .value{font-size:1.7rem;font-weight:800;color:var(--navy)}
+  .kpi .sub{font-size:.78rem;color:var(--muted);margin-top:4px}
+  .kpi.groupA .value{color:var(--cardA)}
+  .kpi.groupB .value{color:var(--cardB)}
+  .chart-card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:20px}
+  .chart-card h3{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:12px}
+  canvas{max-height:340px}
+  .verdict{background:#fff;border:1px solid var(--line);border-radius:10px;padding:24px;border-top:5px solid var(--green)}
+  .verdict .tag{display:inline-block;background:var(--green);color:#fff;font-size:.75rem;font-weight:700;padding:4px 12px;border-radius:20px;margin-bottom:10px}
+  .verdict h3{font-size:1.2rem;color:var(--navy);margin-bottom:10px}
+  .verdict ul{margin:10px 0 0 1.2em}
+  .verdict li{margin-bottom:6px;font-size:.92rem}
+  table{width:100%;border-collapse:collapse;background:#fff;font-size:.88rem}
+  table th, table td{border:1px solid var(--line);padding:8px 10px;text-align:center}
+  table th{background:var(--navy);color:#fff;font-weight:600}
+  table tbody tr:nth-child(even){background:#f8fafc}
+  .note{font-size:.78rem;color:var(--muted);margin-top:8px}
+  .legend-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+  footer{text-align:center;color:var(--muted);font-size:.78rem;padding:20px 0;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>債務整理コールセンター A/Bテスト分析ダッシュボード</h1>
+    <p>弁護士法人AdIre法律事務所 ／ 対象期間：2026-05-07 〜 2026-06-17（平日30日） ／ A群＝従来トーク、B群＝改善トーク ※架空データによるハンズオン用分析</p>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section>
+    <h2 class="sec-title">サマリー（KPI）</h2>
+    <div class="grid grid-4">
+      <div class="card kpi groupA">
+        <div class="label">A群（従来トーク）受任率</div>
+        <div class="value" id="kpiRateA">--%</div>
+        <div class="sub" id="kpiSubA"></div>
+      </div>
+      <div class="card kpi groupB">
+        <div class="label">B群（改善トーク）受任率</div>
+        <div class="value" id="kpiRateB">--%</div>
+        <div class="sub" id="kpiSubB"></div>
+      </div>
+      <div class="card kpi">
+        <div class="label">受任率の差（B−A）</div>
+        <div class="value" id="kpiDiff">--pt</div>
+        <div class="sub" id="kpiDiffCI"></div>
+      </div>
+      <div class="card kpi">
+        <div class="label">統計的有意差</div>
+        <div class="value" id="kpiP">--</div>
+        <div class="sub" id="kpiPSub"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sec-title">統計分析の結論</h2>
+    <div class="verdict">
+      <span class="tag">有意差あり（B群が優位）</span>
+      <h3>改善トークは受任率を統計的に有意に上昇させた</h3>
+      <ul>
+        <li><b>合計件数</b>：A群 1,693件入電 / 379件受任（受任率 22.4%）、B群 1,733件入電 / 447件受任（受任率 25.8%）</li>
+        <li><b>差の大きさ</b>：B群はA群より受任率が <b>+3.4ポイント</b> 高い（95%信頼区間：+0.5pt 〜 +6.3pt、ゼロを含まない）</li>
+        <li><b>カイ二乗検定（2×2表、入電数×受任有無）</b>：χ² = 5.25、<b>p = 0.022</b>（有意水準5%で有意）</li>
+        <li><b>日次受任率による Welch のt検定</b>：t = 2.76、<b>p = 0.008</b>（30日間の日次ばらつきを考慮しても有意）</li>
+        <li>2つの異なる検定方法で一致して有意差が確認できたため、「偶然のばらつき」では説明しづらく、<b>改善トークには受任率を高める効果がある可能性が高い</b>と判断できます。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sec-title">受任率の推移（日次）</h2>
+    <div class="chart-card">
+      <h3>A群 vs B群 日次受任率（%）</h3>
+      <canvas id="trendChart"></canvas>
+    </div>
+  </section>
+
+  <section class="grid grid-2">
+    <div class="chart-card">
+      <h3>受任率の分布（箱ひげ風：日次値の散布）</h3>
+      <canvas id="scatterChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>入電数 vs 受任数（累計）</h3>
+      <canvas id="totalsChart"></canvas>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sec-title">日次データ詳細</h2>
+    <div class="card" style="overflow-x:auto">
+      <table id="dataTable">
+        <thead>
+          <tr><th>日付</th><th>A 入電数</th><th>A 受任数</th><th>A 受任率</th><th>B 入電数</th><th>B 受任数</th><th>B 受任率</th><th>差(B-A)</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p class="note">受任率は小数第2位まで表示。差はB群受任率からA群受任率を引いた値（ポイント）。</p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  AdIre法律事務所 AI研修 数字分析ハンズオン用データに基づく分析（架空データ／実在の事務所・実績ではありません）
+</footer>
+
+<script>
+const DATA = {"dates": ["2026-05-07", "2026-05-08", "2026-05-11", "2026-05-12", "2026-05-13", "2026-05-14", "2026-05-15", "2026-05-18", "2026-05-19", "2026-05-20", "2026-05-21", "2026-05-22", "2026-05-25", "2026-05-26", "2026-05-27", "2026-05-28", "2026-05-29", "2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04", "2026-06-05", "2026-06-08", "2026-06-09", "2026-06-10", "2026-06-11", "2026-06-12", "2026-06-15", "2026-06-16", "2026-06-17"], "A": [{"calls": 70, "signed": 15, "rate": 21.43}, {"calls": 55, "signed": 13, "rate": 23.64}, {"calls": 67, "signed": 17, "rate": 25.37}, {"calls": 64, "signed": 17, "rate": 26.56}, {"calls": 49, "signed": 10, "rate": 20.41}, {"calls": 46, "signed": 12, "rate": 26.09}, {"calls": 60, "signed": 15, "rate": 25}, {"calls": 46, "signed": 14, "rate": 30.43}, {"calls": 59, "signed": 12, "rate": 20.34}, {"calls": 53, "signed": 9, "rate": 16.98}, {"calls": 55, "signed": 10, "rate": 18.18}, {"calls": 46, "signed": 14, "rate": 30.43}, {"calls": 45, "signed": 7, "rate": 15.56}, {"calls": 52, "signed": 13, "rate": 25}, {"calls": 38, "signed": 7, "rate": 18.42}, {"calls": 55, "signed": 11, "rate": 20}, {"calls": 69, "signed": 20, "rate": 28.99}, {"calls": 61, "signed": 16, "rate": 26.23}, {"calls": 61, "signed": 8, "rate": 13.11}, {"calls": 51, "signed": 13, "rate": 25.49}, {"calls": 57, "signed": 14, "rate": 24.56}, {"calls": 49, "signed": 7, "rate": 14.29}, {"calls": 71, "signed": 13, "rate": 18.31}, {"calls": 62, "signed": 15, "rate": 24.19}, {"calls": 50, "signed": 10, "rate": 20}, {"calls": 55, "signed": 14, "rate": 25.45}, {"calls": 49, "signed": 12, "rate": 24.49}, {"calls": 60, "signed": 12, "rate": 20}, {"calls": 65, "signed": 10, "rate": 15.38}, {"calls": 73, "signed": 19, "rate": 26.03}], "B": [{"calls": 48, "signed": 12, "rate": 25}, {"calls": 63, "signed": 18, "rate": 28.57}, {"calls": 56, "signed": 20, "rate": 35.71}, {"calls": 74, "signed": 13, "rate": 17.57}, {"calls": 51, "signed": 14, "rate": 27.45}, {"calls": 42, "signed": 6, "rate": 14.29}, {"calls": 52, "signed": 13, "rate": 25}, {"calls": 76, "signed": 17, "rate": 22.37}, {"calls": 70, "signed": 15, "rate": 21.43}, {"calls": 69, "signed": 14, "rate": 20.29}, {"calls": 50, "signed": 13, "rate": 26}, {"calls": 65, "signed": 15, "rate": 23.08}, {"calls": 63, "signed": 18, "rate": 28.57}, {"calls": 58, "signed": 18, "rate": 31.03}, {"calls": 62, "signed": 13, "rate": 20.97}, {"calls": 49, "signed": 16, "rate": 32.65}, {"calls": 56, "signed": 13, "rate": 23.21}, {"calls": 59, "signed": 17, "rate": 28.81}, {"calls": 63, "signed": 16, "rate": 25.4}, {"calls": 72, "signed": 26, "rate": 36.11}, {"calls": 60, "signed": 17, "rate": 28.33}, {"calls": 56, "signed": 17, "rate": 30.36}, {"calls": 66, "signed": 19, "rate": 28.79}, {"calls": 57, "signed": 14, "rate": 24.56}, {"calls": 44, "signed": 11, "rate": 25}, {"calls": 47, "signed": 12, "rate": 25.53}, {"calls": 48, "signed": 10, "rate": 20.83}, {"calls": 38, "signed": 9, "rate": 23.68}, {"calls": 60, "signed": 17, "rate": 28.33}, {"calls": 59, "signed": 14, "rate": 23.73}]};
+
+const totalA = DATA.A.reduce((s,d)=>({calls:s.calls+d.calls, signed:s.signed+d.signed}), {calls:0,signed:0});
+const totalB = DATA.B.reduce((s,d)=>({calls:s.calls+d.calls, signed:s.signed+d.signed}), {calls:0,signed:0});
+const rateA = totalA.signed/totalA.calls*100;
+const rateB = totalB.signed/totalB.calls*100;
+
+document.getElementById('kpiRateA').textContent = rateA.toFixed(1)+'%';
+document.getElementById('kpiSubA').textContent = `入電 ${totalA.calls.toLocaleString()}件 / 受任 ${totalA.signed.toLocaleString()}件`;
+document.getElementById('kpiRateB').textContent = rateB.toFixed(1)+'%';
+document.getElementById('kpiSubB').textContent = `入電 ${totalB.calls.toLocaleString()}件 / 受任 ${totalB.signed.toLocaleString()}件`;
+document.getElementById('kpiDiff').textContent = (rateB-rateA>=0?'+':'')+(rateB-rateA).toFixed(1)+'pt';
+document.getElementById('kpiDiffCI').textContent = '95%信頼区間：+0.5pt 〜 +6.3pt';
+document.getElementById('kpiP').textContent = 'p = 0.022';
+document.getElementById('kpiPSub').textContent = 'カイ二乗検定（有意水準5%で有意）';
+
+const tbody = document.querySelector('#dataTable tbody');
+DATA.dates.forEach((dt,i)=>{
+  const a = DATA.A[i], b = DATA.B[i];
+  const diff = (b.rate - a.rate).toFixed(2);
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${dt}</td><td>${a.calls}</td><td>${a.signed}</td><td>${a.rate.toFixed(2)}%</td><td>${b.calls}</td><td>${b.signed}</td><td>${b.rate.toFixed(2)}%</td><td style="color:${diff>=0?'#1f9d6b':'#c0392b'}">${diff>=0?'+':''}${diff}pt</td>`;
+  tbody.appendChild(tr);
+});
+
+new Chart(document.getElementById('trendChart'), {
+  type:'line',
+  data:{
+    labels: DATA.dates,
+    datasets:[
+      {label:'A群（従来トーク）', data: DATA.A.map(d=>d.rate), borderColor:'#7c8aa3', backgroundColor:'#7c8aa3', tension:.25},
+      {label:'B群（改善トーク）', data: DATA.B.map(d=>d.rate), borderColor:'#1c6dd0', backgroundColor:'#1c6dd0', tension:.25}
+    ]
+  },
+  options:{responsive:true, scales:{y:{title:{display:true,text:'受任率(%)'}}}}
+});
+
+new Chart(document.getElementById('scatterChart'), {
+  type:'scatter',
+  data:{
+    datasets:[
+      {label:'A群', data: DATA.A.map((d,i)=>({x:i, y:d.rate})), backgroundColor:'#7c8aa3'},
+      {label:'B群', data: DATA.B.map((d,i)=>({x:i, y:d.rate})), backgroundColor:'#1c6dd0'}
+    ]
+  },
+  options:{responsive:true, scales:{x:{title:{display:true,text:'計測日（順番）'}}, y:{title:{display:true,text:'受任率(%)'}}}}
+});
+
+new Chart(document.getElementById('totalsChart'), {
+  type:'bar',
+  data:{
+    labels:['入電数（合計）','受任数（合計）'],
+    datasets:[
+      {label:'A群', data:[totalA.calls, totalA.signed], backgroundColor:'#7c8aa3'},
+      {label:'B群', data:[totalB.calls, totalB.signed], backgroundColor:'#1c6dd0'}
+    ]
+  },
+  options:{responsive:true, scales:{y:{beginAtZero:true}}}
+});
+</script>
+</body>
+</html>
