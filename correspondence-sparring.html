@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>相手方代理人 文面壁打ちツール｜家事事件サポート</title>
+<style>
+  :root{
+    --navy:#0f2c4c;
+    --blue:#1c6dd0;
+    --accent:#e8852b;
+    --accent-dark:#cf6f18;
+    --bg:#f5f7fa;
+    --text:#26303a;
+    --muted:#5f6b78;
+    --line:#e2e8f0;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;color:var(--text);line-height:1.7;background:var(--bg);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:0 20px 80px}
+  header{background:var(--navy);color:#fff;padding:24px 0}
+  header .wrap{display:flex;align-items:center;justify-content:space-between}
+  header h1{font-size:1.3rem;font-weight:800}
+  header .sub{font-size:.78rem;color:#cfe0f2;margin-top:4px}
+  .btn-key{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:.85rem}
+  .btn-key:hover{background:rgba(255,255,255,.22)}
+
+  .panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:28px;margin-top:24px;box-shadow:0 4px 16px rgba(15,44,76,.05)}
+  .panel h2{font-size:1.05rem;color:var(--navy);font-weight:800;margin-bottom:14px}
+  .panel h2 .step{display:inline-block;background:var(--blue);color:#fff;font-size:.75rem;border-radius:50%;width:22px;height:22px;text-align:center;line-height:22px;margin-right:8px}
+  label{display:block;font-size:.85rem;font-weight:700;color:var(--muted);margin-bottom:6px}
+  textarea, select, input[type=text], input[type=password]{
+    width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:.92rem;font-family:inherit;resize:vertical;background:#fafbfc;color:var(--text);
+  }
+  textarea:focus, select:focus, input:focus{outline:2px solid var(--blue);outline-offset:1px;background:#fff}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:16px}
+  .field{margin-bottom:16px}
+  .hint{font-size:.76rem;color:var(--muted);margin-top:4px}
+
+  .btn{display:inline-block;border:none;border-radius:8px;font-weight:700;text-align:center;cursor:pointer;padding:14px 28px;font-size:1rem}
+  .btn-accent{background:var(--accent);color:#fff;box-shadow:0 4px 12px rgba(232,133,43,.35)}
+  .btn-accent:hover{background:var(--accent-dark)}
+  .btn-accent:disabled{background:#c9c9c9;cursor:not-allowed;box-shadow:none}
+
+  .result{margin-top:24px;display:none}
+  .result.show{display:block}
+  .result-block{background:#fafbfc;border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:8px;padding:18px 20px;margin-bottom:16px;white-space:pre-wrap;font-size:.92rem}
+  .result-block h3{font-size:.85rem;color:var(--blue);font-weight:800;margin-bottom:8px}
+  .loading{display:none;color:var(--muted);font-size:.9rem;margin-top:14px}
+  .loading.show{display:block}
+  .error{display:none;background:#fdecec;border:1px solid #f5b5b5;color:#b3261e;border-radius:8px;padding:12px 16px;margin-top:14px;font-size:.88rem}
+  .error.show{display:block}
+
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,44,76,.5);z-index:100;align-items:center;justify-content:center}
+  .modal-overlay.show{display:flex}
+  .modal{background:#fff;border-radius:14px;padding:30px;max-width:460px;width:90%}
+  .modal h2{font-size:1.05rem;color:var(--navy);margin-bottom:10px}
+  .modal p{font-size:.85rem;color:var(--muted);margin-bottom:16px}
+  .modal-actions{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
+  .btn-ghost{background:#eef2f6;color:var(--navy);padding:10px 18px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
+  .notice{background:#fff7e8;border:1px solid #f0d49a;border-radius:8px;padding:14px 18px;font-size:.82rem;color:#7a5b14;margin-top:20px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div>
+      <h1>相手方代理人 文面壁打ちツール</h1>
+      <div class="sub">家事事件（離婚・親権・財産分与等）の交渉文面をAIと一緒にブラッシュアップ</div>
+    </div>
+    <button class="btn-key" id="openKeyModal">APIキー設定</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="panel">
+    <h2><span class="step">1</span>事案の概要（任意）</h2>
+    <div class="row">
+      <div class="field">
+        <label>争点・事案の種類</label>
+        <input type="text" id="caseType" placeholder="例：離婚・親権・面会交流・財産分与など">
+      </div>
+      <div class="field">
+        <label>こちらの立場</label>
+        <select id="side">
+          <option value="申立人代理人">申立人代理人</option>
+          <option value="相手方代理人">相手方代理人</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>希望する解決方針・依頼者の意向（任意）</label>
+      <textarea id="goal" rows="2" placeholder="例：早期に円満な合意を目指したい／面会交流の頻度は譲れない、など"></textarea>
+    </div>
+    <div class="field">
+      <label>返信のトーン</label>
+      <select id="tone">
+        <option value="中立的かつ事務的">中立的かつ事務的</option>
+        <option value="やや柔軟・協調的">やや柔軟・協調的</option>
+        <option value="強めに主張・牽制">強めに主張・牽制</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2><span class="step">2</span>相手方代理人からの文面</h2>
+    <div class="field">
+      <label>受信した文面を貼り付けてください</label>
+      <textarea id="incoming" rows="8" placeholder="相手方代理人からのメール・通知書等の本文をそのまま貼り付け"></textarea>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2><span class="step">3</span>自分の返信ドラフト（任意）</h2>
+    <div class="field">
+      <label>すでに書いた返信案があれば貼り付けてください（空欄でもOK）</label>
+      <textarea id="draft" rows="6" placeholder="自分の返信ドラフトがあれば貼り付け。なければAIにゼロから提案させます。"></textarea>
+    </div>
+    <button class="btn btn-accent" id="runBtn">AIに壁打ちしてもらう</button>
+    <div class="loading" id="loading">生成中です…（数秒〜十数秒かかります）</div>
+    <div class="error" id="error"></div>
+  </div>
+
+  <div class="result" id="result">
+    <div class="panel">
+      <h2>壁打ち結果</h2>
+      <div id="resultContent"></div>
+    </div>
+  </div>
+
+  <div class="notice">
+    ※本ツールはご自身のAnthropic APIキーを使い、入力内容をブラウザから直接Claude APIに送信します。サーバーには保存されません。依頼者の機微情報を貼り付ける際は、氏名等の特定情報を匿名化することを推奨します。
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="keyModalOverlay">
+  <div class="modal">
+    <h2>Anthropic APIキー設定</h2>
+    <p>キーはこのブラウザのlocalStorageにのみ保存され、外部サーバーには送信されません。<br>未取得の方は <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> で発行できます。</p>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-...">
+    <div class="modal-actions">
+      <button class="btn-ghost" id="closeKeyModal">閉じる</button>
+      <button class="btn btn-accent" id="saveKeyBtn">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'anthropic_api_key';
+
+const keyModalOverlay = document.getElementById('keyModalOverlay');
+document.getElementById('openKeyModal').addEventListener('click', () => {
+  document.getElementById('apiKeyInput').value = localStorage.getItem(STORAGE_KEY) || '';
+  keyModalOverlay.classList.add('show');
+});
+document.getElementById('closeKeyModal').addEventListener('click', () => keyModalOverlay.classList.remove('show'));
+document.getElementById('saveKeyBtn').addEventListener('click', () => {
+  const v = document.getElementById('apiKeyInput').value.trim();
+  if (v) localStorage.setItem(STORAGE_KEY, v);
+  else localStorage.removeItem(STORAGE_KEY);
+  keyModalOverlay.classList.remove('show');
+});
+
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderResult(text){
+  const sections = text.split(/\n(?=##\s)/).filter(s => s.trim());
+  const content = document.getElementById('resultContent');
+  if (sections.length <= 1) {
+    content.innerHTML = `<div class="result-block">${escapeHtml(text)}</div>`;
+    return;
+  }
+  content.innerHTML = sections.map(sec => {
+    const m = sec.match(/^##\s*(.+)\n([\s\S]*)$/);
+    if (!m) return `<div class="result-block">${escapeHtml(sec)}</div>`;
+    return `<div class="result-block"><h3>${escapeHtml(m[1].trim())}</h3>${escapeHtml(m[2].trim())}</div>`;
+  }).join('');
+}
+
+document.getElementById('runBtn').addEventListener('click', async () => {
+  const apiKey = localStorage.getItem(STORAGE_KEY);
+  const errorEl = document.getElementById('error');
+  errorEl.classList.remove('show');
+
+  if (!apiKey) {
+    errorEl.textContent = 'まず右上の「APIキー設定」からAnthropic APIキーを登録してください。';
+    errorEl.classList.add('show');
+    return;
+  }
+
+  const incoming = document.getElementById('incoming').value.trim();
+  if (!incoming) {
+    errorEl.textContent = '相手方代理人からの文面を入力してください。';
+    errorEl.classList.add('show');
+    return;
+  }
+
+  const caseType = document.getElementById('caseType').value.trim();
+  const side = document.getElementById('side').value;
+  const goal = document.getElementById('goal').value.trim();
+  const tone = document.getElementById('tone').value;
+  const draft = document.getElementById('draft').value.trim();
+
+  const userPrompt = `
+あなたは家事事件（離婚・親権・財産分与・面会交流等）を専門とする日本の弁護士の実務をサポートする壁打ち相手です。
+以下の情報をもとに、相手方代理人とのやり取りについて検討してください。
+
+【事案の種類】${caseType || '(未指定)'}
+【こちらの立場】${side}
+【依頼者の意向・希望する解決方針】${goal || '(未指定)'}
+【希望する返信トーン】${tone}
+
+【相手方代理人からの受信文面】
+${incoming}
+
+【自分が作成した返信ドラフト】
+${draft || '(まだ作成していない。ゼロから提案してほしい)'}
+
+以下の見出し構成で、Markdownの "## " 見出しを使って出力してください。本文は日本の実務に即した内容にし、断定しすぎず実務上の留意点として記載してください。
+
+## 相手方文面の読み解き
+相手方代理人の意図・主張の強さ・トーン・交渉上の立ち位置を分析する。
+
+## 自分のドラフトへのフィードバック
+（ドラフトがある場合）弱い言い回し、リスクのある表現、抜け漏れている論点を具体的に指摘する。（ドラフトがない場合）返信で押さえるべき論点を列挙する。
+
+## 改善版の返信文（${tone}）
+実際にそのまま使える返信文のドラフトを1つ提示する。
+
+## 想定される相手方の反応と次の一手
+この返信を送った場合に想定される相手方の反応と、次に取るべき対応の選択肢を示す。
+`.trim();
+
+  const runBtn = document.getElementById('runBtn');
+  runBtn.disabled = true;
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('result').classList.remove('show');
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: userPrompt }]
+      })
+    });
+
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(`APIエラー (${res.status}): ${errBody}`);
+    }
+
+    const data = await res.json();
+    const text = data.content && data.content[0] && data.content[0].text ? data.content[0].text : '結果を取得できませんでした。';
+    renderResult(text);
+    document.getElementById('result').classList.add('show');
+  } catch (e) {
+    errorEl.textContent = '生成に失敗しました: ' + e.message;
+    errorEl.classList.add('show');
+  } finally {
+    runBtn.disabled = false;
+    document.getElementById('loading').classList.remove('show');
+  }
+});
+</script>
+
+</body>
+</html>
