@@ -302,13 +302,15 @@ function parseFreeText(){
   const text = document.getElementById('freeText').value;
   if (!text.trim()) return;
 
-  // 名前として使えない文字（区切り記号・括弧）
-  const NAME_CHARS = '[^\\s　、。\\/／\\n（）()｟｠]';
+  // 名前として使えない文字（区切り記号・括弧・コロン）
+  const NAME_CHARS = '[^\\s　、。\\/／\\n（）()｟｠:：]';
   const NOT_PARTICLE = '(?!は|が|の|を|も|で|と|に|から|まで|という|らしい|って|だ|です)';
   const GENERIC_WORDS = ['奥','旦那','相手','本人','相談者','クライアント','夫','妻','依頼者'];
 
   function extractByLabels(labelAlt){
-    const re = new RegExp('(?:' + labelAlt + ')[)）:：]?\\s*' + NOT_PARTICLE + '(' + NAME_CHARS + '{1,10})');
+    // 「（妻）」「(夫)」のような性別・属性の注記としての使用は除外し、
+    // ラベルが名前を導入する用法（直後にコロン・括弧・名前が続く）のみ採用する。
+    const re = new RegExp('(?:' + labelAlt + ')[:：]?\\s*' + NOT_PARTICLE + '(' + NAME_CHARS + '{1,10})');
     const m = text.match(re);
     if (!m) return '';
     const cand = m[1];
@@ -333,10 +335,16 @@ function parseFreeText(){
   const marriageIso = marriageMatch ? toIsoDate(marriageMatch[1]) : '';
   if (marriageIso) document.getElementById('marriageDate').value = marriageIso;
 
-  // 「別居してない／していない」等の否定表現を優先して判定
-  const separationNegative = /別居[:：]?(?:して)?(?:い)?ない|まだ同居|同居中/.test(text);
-  const separationPositive = /別居中|別居している|別居開始|別居[:：]?して/.test(text);
-  const separated = separationPositive && !separationNegative;
+  // 「別居中」の明示があれば最優先（「子は依頼者と同居中」等、無関係な「同居中」に引っ張られないようにする）
+  // 次に「別居してない」等の否定表現を確認し、それ以外は「別居して」等の表現で判定
+  let separated;
+  if (/別居中/.test(text)) {
+    separated = true;
+  } else if (/別居[:：]?(?:して)?(?:い)?ない|まだ同居/.test(text)) {
+    separated = false;
+  } else {
+    separated = /別居している|別居開始|別居[:：]?して/.test(text);
+  }
   document.getElementById('separation').value = separated ? 'separated' : 'none';
   document.getElementById('separationDateWrap').style.display = separated ? 'block' : 'none';
   if (separated) {
@@ -373,12 +381,38 @@ function parseFreeText(){
   setIssue('litigation', kw(/訴訟|裁判/));
   setIssue('urgent', kw(/緊急|身の安全|保護命令/));
 
-  const alimonyAmt = text.match(/慰謝料[^0-9]{0,6}(\d+万円)/);
-  if (alimonyAmt) document.getElementById('alimonyAmount').value = alimonyAmt[1];
-  const supportAmt = text.match(/養育費[^0-9]{0,6}(\d+万円)/);
-  if (supportAmt) document.getElementById('childSupportAmount').value = supportAmt[1];
-  const livingAmt = text.match(/婚姻費用[^0-9]{0,6}(\d+万円)/);
-  if (livingAmt) document.getElementById('livingExpenseAmount').value = livingAmt[1];
+  // トピックの語の周辺にある「○万円」を全て探し、「希望」等の意向を示す語に
+  // 最も近いものを優先する（現在の支払額より依頼者の希望額を優先するため）
+  function extractDesiredAmount(keywordRe){
+    const topicMatch = text.match(keywordRe);
+    if (!topicMatch) return '';
+    const start = topicMatch.index;
+    const window = text.slice(start, start + 80);
+    const amountRe = /(\d+万円)/g;
+    const amounts = [];
+    let m;
+    while ((m = amountRe.exec(window))) amounts.push({ value: m[1], index: m.index });
+    if (!amounts.length) return '';
+    const wishRe = /希望|きぼう|欲しい|ほしい/g;
+    const wishPositions = [];
+    while ((m = wishRe.exec(window))) wishPositions.push(m.index);
+    if (wishPositions.length) {
+      amounts.sort((a, b) => {
+        const da = Math.min(...wishPositions.map(p => Math.abs(p - a.index)));
+        const db = Math.min(...wishPositions.map(p => Math.abs(p - b.index)));
+        return da - db;
+      });
+      return amounts[0].value;
+    }
+    return amounts[amounts.length - 1].value;
+  }
+
+  const alimonyAmt = extractDesiredAmount(/慰謝料/);
+  if (alimonyAmt) document.getElementById('alimonyAmount').value = alimonyAmt;
+  const supportAmt = extractDesiredAmount(/養育費/);
+  if (supportAmt) document.getElementById('childSupportAmount').value = supportAmt;
+  const livingAmt = extractDesiredAmount(/婚姻費用|生活費/);
+  if (livingAmt) document.getElementById('livingExpenseAmount').value = livingAmt;
 
   document.getElementById('clientName').closest('.card').scrollIntoView({behavior:'smooth'});
 }
