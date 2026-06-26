@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>離婚事件 受任前ヒアリング支援ツール｜チェックリスト・聴取事項・請求書面自動生成</title>
+<title>離婚事件処理支援ツール｜受任前ヒアリングから交渉・進捗管理・協議書作成まで</title>
 <style>
   :root{
     --navy:#0f2c4c;
@@ -50,6 +50,9 @@
   ul.checklist{list-style:none}
   ul.checklist li{position:relative;padding:6px 0 6px 28px;font-size:.92rem;border-bottom:1px dashed var(--line)}
   ul.checklist li::before{content:"☐";position:absolute;left:0;top:6px;color:var(--blue);font-size:1.1rem}
+  ul.checklist li.task-check{padding-left:4px}
+  ul.checklist li.task-check::before{content:none}
+  ul.checklist li.task-check.done{color:var(--muted);text-decoration:line-through}
   ul.qa{list-style:none}
   ul.qa li{position:relative;padding:7px 0 7px 22px;font-size:.92rem;border-bottom:1px dashed var(--line)}
   ul.qa li::before{content:"Q.";position:absolute;left:0;top:7px;color:var(--accent);font-weight:800;font-size:.85rem}
@@ -74,6 +77,20 @@
   .deadline-text-over{color:#b3392c;font-weight:800}
   .deadline-text-soon{color:var(--accent-dark);font-weight:800}
   .row-link{cursor:pointer;color:var(--blue);text-decoration:underline}
+  nav.stepnav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 22px}
+  nav.stepnav a{background:#fff;border:1px solid var(--navy);color:var(--navy);font-size:.8rem;font-weight:700;padding:7px 14px;border-radius:20px;text-decoration:none}
+  nav.stepnav a:hover{background:var(--navy);color:#fff}
+  .task-check{margin-bottom:4px}
+  .task-check input{width:auto;margin-right:8px}
+  .task-check.done label{color:var(--muted);text-decoration:line-through}
+  table.cal{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:10px}
+  table.cal th,table.cal td{border:1px solid var(--line);padding:6px;vertical-align:top;height:64px;width:14.2%}
+  table.cal th{background:var(--bg);text-align:center;color:var(--navy)}
+  table.cal td.othermonth{background:#fafbfc;color:#c2cad2}
+  table.cal td .daynum{font-weight:700;font-size:.78rem;color:var(--muted)}
+  table.cal td .cal-case{display:block;font-size:.72rem;background:var(--accent);color:#fff;border-radius:4px;padding:1px 4px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  table.cal td.has-overdue .cal-case{background:#b3392c}
+  .cal-nav{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:8px;font-weight:800;color:var(--navy)}
   textarea#letterOut,textarea#memoOut{width:100%;min-height:420px;font-size:.86rem;line-height:1.9;padding:18px;border:1px solid var(--line);border-radius:8px;white-space:pre-wrap}
   @media print{
     header,.btn-row,.card.input-card{display:none}
@@ -87,23 +104,44 @@
 <header>
   <div class="wrap">
     <div>
-      <h1>離婚事件 受任前ヒアリング支援ツール</h1>
-      <p>依頼者の前情報・意向を入力 → 7項目の整理、必要書類・聴取事項、法的見通しメモ、受任通知書面を自動生成</p>
+      <h1>離婚事件処理支援ツール</h1>
+      <p>受任前ヒアリングから、交渉・反論書面のやり取り、進捗管理、示談・協議書作成まで、事件処理を一元的に支援</p>
     </div>
   </div>
 </header>
 
 <div class="wrap">
 
-  <div class="card input-card">
+  <nav class="stepnav">
+    <a href="#section-dashboard">① 事件一覧・進捗管理</a>
+    <a href="#section-intake">② 受任前ヒアリング・請求書面</a>
+    <a href="#section-negotiation">③ 相手方とのやり取り・反論書面</a>
+    <a href="#section-agreement">④ 示談・離婚協議書（案）</a>
+  </nav>
+
+  <div class="card input-card" id="section-dashboard">
     <h2>事件一覧・進捗管理</h2>
     <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
       保存済みの全事件をステータス・次回対応期限の観点で一覧表示します。期限切れ・期限間近の事件は色付けして表示されます。事件名をクリックすると読込みます。
     </p>
-    <div style="overflow-x:auto">
+    <div class="btn-row" style="margin:0 0 12px">
+      <button class="btn btn-outline" onclick="toggleDashboardView()" id="dashboardViewToggle">カレンダー表示に切替</button>
+    </div>
+    <div id="dashboardTableView" style="overflow-x:auto">
       <table class="dash">
-        <thead><tr><th>事件名</th><th>ステータス</th><th>次回対応期限</th><th>最終更新</th><th>直近の対応</th></tr></thead>
+        <thead><tr><th>事件名</th><th>ステータス</th><th>次回対応期限</th><th>資料準備</th><th>最終更新</th><th>直近の対応</th></tr></thead>
         <tbody id="dashboardBody"></tbody>
+      </table>
+    </div>
+    <div id="dashboardCalendarView" style="display:none">
+      <div class="cal-nav">
+        <button class="btn btn-outline" style="padding:6px 14px" onclick="shiftCalMonth(-1)">＜前月</button>
+        <span id="calMonthLabel"></span>
+        <button class="btn btn-outline" style="padding:6px 14px" onclick="shiftCalMonth(1)">次月＞</button>
+      </div>
+      <table class="cal">
+        <thead><tr><th>日</th><th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th>土</th></tr></thead>
+        <tbody id="calBody"></tbody>
       </table>
     </div>
   </div>
@@ -150,7 +188,7 @@
     <div id="historyList" style="font-size:.85rem;color:var(--muted)"></div>
   </div>
 
-  <div class="card input-card">
+  <div class="card input-card" id="section-intake">
     <h2>0. 依頼者情報のまとめ入力（自由記述）</h2>
     <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
       聴取メモをそのまま貼り付けて「自動入力」を押すと、下記フォームにできるだけ反映します（反映後は必ず内容をご確認・修正してください）。
@@ -316,6 +354,7 @@
 
       <div class="result-section">
         <h2>必要書類・資料チェックリスト</h2>
+        <p id="docProgress" style="font-size:.82rem;color:var(--muted);margin-bottom:8px"></p>
         <ul class="checklist" id="docList"></ul>
       </div>
 
@@ -328,6 +367,7 @@
         <h2>法的見通し（依頼者説明・内部検討用メモ）</h2>
         <div class="btn-row" style="margin:0 0 12px">
           <button class="btn btn-outline" onclick="copyArea('memoOut')">本文をコピー</button>
+          <button class="btn btn-outline" onclick="downloadAsWord('memoOut','法的見通し検討メモ.doc')">Wordで保存</button>
         </div>
         <textarea id="memoOut" readonly></textarea>
       </div>
@@ -336,13 +376,14 @@
         <h2>相手方への受任通知・初回請求書面（ドラフト）</h2>
         <div class="btn-row" style="margin:0 0 12px">
           <button class="btn btn-outline" onclick="copyArea('letterOut')">本文をコピー</button>
+          <button class="btn btn-outline" onclick="downloadAsWord('letterOut','受任通知・請求書面.doc')">Wordで保存</button>
         </div>
         <textarea id="letterOut" readonly></textarea>
       </div>
     </div>
   </div>
 
-  <div class="card input-card">
+  <div class="card input-card" id="section-negotiation">
     <h2>4. 相手方からの回答・反論書面の作成</h2>
     <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
       相手方代理人等からの回答を貼り付けて「回答を反映」を押すと、7項目ごとの相手方の立場を自動で下書きします（必ず内容を確認・修正してください）。修正後「反論書面を生成」を押すと、項目ごとの方針を踏まえた書面ドラフトを作成します。
@@ -354,7 +395,7 @@
       <button class="btn btn-accent" onclick="parseOpponentText()">回答を反映</button>
     </div>
     <table class="points">
-      <thead><tr><th>項目</th><th>相手方の立場</th><th>補足（条件等）</th></tr></thead>
+      <thead><tr><th>項目</th><th>相手方の立場</th><th>補足（条件等）</th><th>最終合意内容（協議書用）</th></tr></thead>
       <tbody id="opponentBody"></tbody>
     </table>
     <div class="btn-row">
@@ -364,6 +405,7 @@
       <h2>反論書面（ドラフト）</h2>
       <div class="btn-row" style="margin:0 0 12px">
         <button class="btn btn-outline" onclick="copyArea('rebuttalOut')">本文をコピー</button>
+        <button class="btn btn-outline" onclick="downloadAsWord('rebuttalOut','反論書面.doc')">Wordで保存</button>
       </div>
       <textarea id="rebuttalOut" readonly></textarea>
     </div>
@@ -379,6 +421,24 @@
           <tbody id="negotiationLogBody"></tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <div class="card input-card" id="section-agreement">
+    <h2>5. 示談・離婚協議書（案）の作成</h2>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
+      上の表の「最終合意内容」欄に各項目の最終的な合意内容を記入し（条件付で応じる等の補足欄をコピーして調整してください）、ボタンを押すと離婚協議書（案）のドラフトを生成します。公正証書化する場合は、最終的に公証役場・司法書士等とご確認ください。
+    </p>
+    <div class="btn-row" style="margin:0 0 12px">
+      <button class="btn btn-accent" onclick="generateAgreement()">離婚協議書（案）を生成</button>
+    </div>
+    <div class="result-section" id="agreementWrap" style="display:none">
+      <h2>離婚協議書（案）</h2>
+      <div class="btn-row" style="margin:0 0 12px">
+        <button class="btn btn-outline" onclick="copyArea('agreementOut')">本文をコピー</button>
+        <button class="btn btn-outline" onclick="downloadAsWord('agreementOut','離婚協議書（案）.doc')">Wordで保存</button>
+      </div>
+      <textarea id="agreementOut" readonly></textarea>
     </div>
   </div>
 
@@ -417,6 +477,44 @@ const POINT_DEFS = [
 let currentCaseId = null;
 let caseHistory = [];
 let negotiationLog = [];
+let docTasks = {};
+
+function renderDocList(items, savedTasks){
+  docTasks = savedTasks || {};
+  const docList = document.getElementById('docList');
+  docList.innerHTML = '';
+  items.forEach((d, i) => {
+    const li = document.createElement('li');
+    li.className = 'task-check' + (docTasks[d] ? ' done' : '');
+    li.dataset.doc = d;
+    const id = 'doctask_' + i;
+    li.innerHTML = '<input type="checkbox" id="' + id + '"' + (docTasks[d] ? ' checked' : '') + '> <label for="' + id + '"></label>';
+    li.querySelector('label').textContent = d;
+    li.querySelector('input').addEventListener('change', function(){
+      docTasks[d] = this.checked;
+      li.classList.toggle('done', this.checked);
+      updateDocProgress();
+      if (currentCaseId) {
+        const store = loadCaseStore();
+        if (store[currentCaseId]) {
+          store[currentCaseId].data = collectFormData();
+          saveCaseStore(store);
+          renderDashboard();
+        }
+      }
+    });
+    docList.appendChild(li);
+  });
+  updateDocProgress();
+}
+
+function updateDocProgress(){
+  const items = Object.keys(docTasks);
+  const total = document.querySelectorAll('#docList li').length;
+  const done = document.querySelectorAll('#docList li.done').length;
+  const p = document.getElementById('docProgress');
+  p.textContent = total ? ('準備状況：' + done + ' / ' + total + ' 件完了') : '';
+}
 
 function loadCaseStore(){
   try { return JSON.parse(localStorage.getItem('divorceCases') || '{}'); }
@@ -433,15 +531,21 @@ function collectFormData(){
   ISSUE_KEYS.forEach(k => { data.issues[k] = checked(k); });
   data.opponentStatus = {};
   data.opponentNote = {};
+  data.finalTerms = {};
   POINT_DEFS.forEach(p => {
     const sel = document.getElementById('oppStatus_' + p.key);
     const note = document.getElementById('oppNote_' + p.key);
+    const finalEl = document.getElementById('finalTerm_' + p.key);
     if (sel) data.opponentStatus[p.key] = sel.value;
     if (note) data.opponentNote[p.key] = note.value;
+    if (finalEl) data.finalTerms[p.key] = finalEl.value;
   });
   data.memoOut = document.getElementById('memoOut').value;
   data.letterOut = document.getElementById('letterOut').value;
   data.rebuttalOut = document.getElementById('rebuttalOut').value;
+  data.agreementOut = document.getElementById('agreementOut') ? document.getElementById('agreementOut').value : '';
+  data.docListItems = Array.from(document.querySelectorAll('#docList li')).map(li => li.dataset.doc);
+  data.docTasks = docTasks;
   return data;
 }
 
@@ -459,11 +563,20 @@ function applyFormData(data){
     const note = document.getElementById('oppNote_' + p.key);
     if (note && data.opponentNote[p.key] !== undefined) note.value = data.opponentNote[p.key];
   });
+  if (data.finalTerms) POINT_DEFS.forEach(p => {
+    const finalEl = document.getElementById('finalTerm_' + p.key);
+    if (finalEl && data.finalTerms[p.key] !== undefined) finalEl.value = data.finalTerms[p.key];
+  });
   document.getElementById('memoOut').value = data.memoOut || '';
   document.getElementById('letterOut').value = data.letterOut || '';
   document.getElementById('rebuttalOut').value = data.rebuttalOut || '';
   document.getElementById('result').style.display = data.letterOut ? 'block' : 'none';
   document.getElementById('rebuttalWrap').style.display = data.rebuttalOut ? 'block' : 'none';
+  renderDocList(data.docListItems || [], data.docTasks || {});
+  if (document.getElementById('agreementOut')) {
+    document.getElementById('agreementOut').value = data.agreementOut || '';
+    document.getElementById('agreementWrap').style.display = data.agreementOut ? 'block' : 'none';
+  }
 }
 
 function addHistory(label){
@@ -514,7 +627,7 @@ function renderDashboard(){
   const store = loadCaseStore();
   const body = document.getElementById('dashboardBody');
   const ids = Object.keys(store);
-  if (!ids.length) { body.innerHTML = '<tr><td colspan="5" style="color:var(--muted)">保存済みの事件はまだありません。</td></tr>'; return; }
+  if (!ids.length) { body.innerHTML = '<tr><td colspan="6" style="color:var(--muted)">保存済みの事件はまだありません。</td></tr>'; return; }
 
   const todayStr = new Date().toISOString().slice(0,10);
   const soonLimit = new Date();
@@ -534,7 +647,11 @@ function renderDashboard(){
       if (deadline < todayStr) { deadlineClass = 'deadline-over'; deadlineTextClass = 'deadline-text-over'; }
       else if (deadline <= soonStr) { deadlineClass = 'deadline-soon'; deadlineTextClass = 'deadline-text-soon'; }
     }
-    return { id, c, deadline, deadlineClass, deadlineTextClass, status, lastAction };
+    const docItems = d.docListItems || [];
+    const docTasksSaved = d.docTasks || {};
+    const docDone = docItems.filter(t => docTasksSaved[t]).length;
+    const docProgressText = docItems.length ? (docDone + ' / ' + docItems.length) : '－';
+    return { id, c, deadline, deadlineClass, deadlineTextClass, status, lastAction, docProgressText };
   });
 
   // 期限が近い（または超過の）事件を上位に表示
@@ -553,9 +670,78 @@ function renderDashboard(){
       '<td><span class="row-link" onclick="loadCaseFromDashboard(\'' + r.id + '\')">' + (r.c.label || '無題の事件') + '</span></td>' +
       '<td>' + badge + '</td>' +
       '<td>' + deadlineText + '</td>' +
+      '<td>' + r.docProgressText + '</td>' +
       '<td>' + (r.c.savedAt || '－') + '</td>' +
       '<td>' + lastActionText + '</td></tr>';
   }).join('');
+
+  if (document.getElementById('dashboardCalendarView').style.display !== 'none') renderCalendar();
+}
+
+let calMonth = new Date();
+calMonth.setDate(1);
+
+function toggleDashboardView(){
+  const tableView = document.getElementById('dashboardTableView');
+  const calView = document.getElementById('dashboardCalendarView');
+  const btn = document.getElementById('dashboardViewToggle');
+  const showingCal = calView.style.display !== 'none';
+  if (showingCal) {
+    calView.style.display = 'none';
+    tableView.style.display = 'block';
+    btn.textContent = 'カレンダー表示に切替';
+  } else {
+    tableView.style.display = 'none';
+    calView.style.display = 'block';
+    btn.textContent = '表形式に切替';
+    renderCalendar();
+  }
+}
+
+function shiftCalMonth(delta){
+  calMonth.setMonth(calMonth.getMonth() + delta);
+  renderCalendar();
+}
+
+function renderCalendar(){
+  const store = loadCaseStore();
+  const year = calMonth.getFullYear();
+  const month = calMonth.getMonth();
+  document.getElementById('calMonthLabel').textContent = year + '年' + (month + 1) + '月';
+
+  const deadlineMap = {};
+  Object.values(store).forEach(c => {
+    const d = c.data || {};
+    if (!d.nextDeadline) return;
+    if (d.caseStatus === 'settled' || d.caseStatus === 'closed') return;
+    (deadlineMap[d.nextDeadline] = deadlineMap[d.nextDeadline] || []).push(c.label || '無題の事件');
+  });
+
+  const todayStr = new Date().toISOString().slice(0,10);
+  const firstDay = new Date(year, month, 1);
+  const startWeekday = firstDay.getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cellsTotal = Math.ceil((startWeekday + daysInMonth) / 7) * 7;
+
+  let html = '';
+  for (let row = 0; row < cellsTotal / 7; row++) {
+    html += '<tr>';
+    for (let col = 0; col < 7; col++) {
+      const cellIndex = row * 7 + col;
+      const dayNum = cellIndex - startWeekday + 1;
+      if (dayNum < 1 || dayNum > daysInMonth) {
+        html += '<td class="othermonth"></td>';
+        continue;
+      }
+      const dateStr = year + '-' + String(month + 1).padStart(2,'0') + '-' + String(dayNum).padStart(2,'0');
+      const cases = deadlineMap[dateStr] || [];
+      const overdue = dateStr < todayStr && cases.length;
+      html += '<td class="' + (overdue ? 'has-overdue' : '') + '"><span class="daynum">' + dayNum + '</span>' +
+        cases.map(label => '<span class="cal-case">' + label + '</span>').join('') + '</td>';
+    }
+    html += '</tr>';
+  }
+  document.getElementById('calBody').innerHTML = html;
 }
 
 function loadCaseFromDashboard(caseId){
@@ -640,6 +826,11 @@ function newCase(){
   document.getElementById('rebuttalOut').value = '';
   document.getElementById('result').style.display = 'none';
   document.getElementById('rebuttalWrap').style.display = 'none';
+  renderDocList([], {});
+  if (document.getElementById('agreementOut')) {
+    document.getElementById('agreementOut').value = '';
+    document.getElementById('agreementWrap').style.display = 'none';
+  }
   renderHistory();
   renderNegotiationLog();
   document.getElementById('caseSelect').value = '';
@@ -704,7 +895,13 @@ function renderOpponentTable(){
     note.id = 'oppNote_' + p.key;
     note.placeholder = '例）月10万円なら応じる';
     tdNote.appendChild(note);
-    tr.appendChild(th); tr.appendChild(tdStatus); tr.appendChild(tdNote);
+    const tdFinal = document.createElement('td');
+    const finalInput = document.createElement('input');
+    finalInput.type = 'text';
+    finalInput.id = 'finalTerm_' + p.key;
+    finalInput.placeholder = '例）月8万円とする';
+    tdFinal.appendChild(finalInput);
+    tr.appendChild(th); tr.appendChild(tdStatus); tr.appendChild(tdNote); tr.appendChild(tdFinal);
     body.appendChild(tr);
   });
 }
@@ -819,6 +1016,73 @@ function generateRebuttal(){
       store[currentCaseId].data = collectFormData();
       store[currentCaseId].history = caseHistory;
       store[currentCaseId].negotiationLog = negotiationLog;
+      saveCaseStore(store);
+      renderDashboard();
+    }
+  }
+}
+
+function generateAgreement(){
+  const clientName = document.getElementById('clientName').value || '依頼者';
+  const spouseName = document.getElementById('spouseName').value || '相手方';
+  const today = new Date().toLocaleDateString('ja-JP');
+
+  const FALLBACK = {
+    divorce: clientName + 'と' + spouseName + 'は、協議離婚することに合意する。',
+    living: '離婚成立までの婚姻費用について、双方協議の上定める。',
+    support: '養育費について、双方協議の上定める。',
+    property: '財産分与について、双方協議の上定める。',
+    alimony: '慰謝料について、双方協議の上定める。',
+    pension: '年金分割（合意分割）の按分割合について、双方協議の上定める。',
+    custody: '未成年の子の親権者について、双方協議の上定める。',
+  };
+
+  const lines = [];
+  lines.push('離婚協議書（案）');
+  lines.push('');
+  lines.push(clientName + '（以下「甲」という。）と' + spouseName + '（以下「乙」という。）は、甲乙間の離婚及びこれに伴う諸条件について、以下のとおり合意する。');
+  lines.push('');
+
+  let sec = 1;
+  let missing = false;
+  POINT_DEFS.forEach(p => {
+    const finalEl = document.getElementById('finalTerm_' + p.key);
+    const finalVal = finalEl ? finalEl.value.trim() : '';
+    lines.push('第' + sec + '条（' + p.label.replace(/^[⑴⑵⑶⑷⑸⑹⑺]\s*/, '') + '）');
+    if (finalVal) {
+      lines.push(finalVal);
+    } else {
+      lines.push(FALLBACK[p.key]);
+      missing = true;
+    }
+    lines.push('');
+    sec++;
+  });
+
+  lines.push('第' + sec + '条（公正証書化）');
+  lines.push('甲及び乙は、本合意の内容を確実に履行するため、別途、本協議書の内容に基づく公正証書を作成するものとする。');
+  lines.push('');
+  lines.push('以上の合意の成立を証するため、本書を2部作成し、甲乙each1部を保有する。');
+  lines.push('');
+  lines.push(today);
+  lines.push('');
+  lines.push('甲（依頼者）　' + clientName + '　　　　　　　　　　印');
+  lines.push('乙（相手方）　' + spouseName + '　　　　　　　　　　印');
+
+  if (missing) {
+    lines.push('');
+    lines.push('※「最終合意内容」欄が未入力の項目は仮の条文になっています。送付前に各項目の最終合意内容をご確認・補完してください。');
+  }
+
+  document.getElementById('agreementOut').value = lines.join('\n');
+  document.getElementById('agreementWrap').style.display = 'block';
+  document.getElementById('agreementWrap').scrollIntoView({behavior:'smooth'});
+  addHistory('離婚協議書（案）を生成');
+  if (currentCaseId) {
+    const store = loadCaseStore();
+    if (store[currentCaseId]) {
+      store[currentCaseId].data = collectFormData();
+      store[currentCaseId].history = caseHistory;
       saveCaseStore(store);
       renderDashboard();
     }
@@ -1141,13 +1405,7 @@ function generate(){
     ' ／ 未成年の子：' + (hasChildren ? 'あり' : 'なし') +
     ' ／ 作成日：' + today;
 
-  const docList = document.getElementById('docList');
-  docList.innerHTML = '';
-  [...docs].forEach(d=>{
-    const li = document.createElement('li');
-    li.textContent = d;
-    docList.appendChild(li);
-  });
+  renderDocList([...docs], {});
 
   const qaList = document.getElementById('qaList');
   qaList.innerHTML = '';
@@ -1307,6 +1565,20 @@ function generate(){
       renderDashboard();
     }
   }
+}
+
+function downloadAsWord(textareaId, filename){
+  const text = document.getElementById(textareaId).value;
+  if (!text.trim()) { alert('出力内容がありません。先に書面を生成してください。'); return; }
+  const escaped = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  const html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
+    '<head><meta charset="utf-8"><style>body{font-family:"Yu Mincho","MS Mincho",serif;font-size:10.5pt;line-height:1.8;}</style></head>' +
+    '<body>' + escaped + '</body></html>';
+  const blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
 }
 
 function copyArea(id){
