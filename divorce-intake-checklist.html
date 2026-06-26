@@ -1587,6 +1587,167 @@ function copyArea(id){
   document.execCommand('copy');
 }
 
+// ============ プレゼン用ダミーデータ ============
+function seedDemoData(){
+  const store = loadCaseStore();
+
+  Object.keys(store).forEach(id => { if (store[id].label === '保存テスト用１' || store[id].label === '保存テスト用1') delete store[id]; });
+
+  if (!localStorage.getItem('divorceDemoSeeded_v1')) {
+    const commonFirm = {
+      firmName: '○○法律事務所',
+      lawyerName: '弁護士　検証太郎',
+      firmContact: 'TEL 03-0000-0000／FAX 03-0000-0001',
+      firmAddress: '東京都千代田区○○4-5-6　○○ビル3階',
+      replyDays: '14',
+    };
+
+    function makeDocs(items, doneCount){
+      const docTasks = {};
+      items.forEach((d, i) => { docTasks[d] = i < doneCount; });
+      return { docListItems: items, docTasks };
+    }
+
+    const docsBase = [
+      '戸籍謄本（夫婦・子の記載があるもの）',
+      '住民票（依頼者・相手方）',
+      '依頼者の本人確認書類（運転免許証・マイナンバーカード等）',
+      '別居の経緯・別居開始日を示す資料（賃貸契約書、転居の記録等）',
+      '不貞行為を示す証拠（写真・LINE等のメッセージ履歴等）',
+      '依頼者・相手方双方の収入を示す資料（給与明細、源泉徴収票等）',
+      '不動産の登記簿謄本（全部事項証明書）・固定資産評価証明書',
+      '年金分割のための情報通知書（年金事務所で取得）',
+    ];
+
+    const demoCases = [
+      {
+        id: 'demo_case_a',
+        label: '佐藤様　離婚事件（交渉中）',
+        savedAt: '2026/6/15 10:00:00',
+        data: Object.assign({}, commonFirm, {
+          clientName: '佐藤　恵子', spouseName: '佐藤　健一',
+          marriageDate: '2014-05-10', separation: 'separated', separationDate: '2025-03-01',
+          hasChildren: 'yes', childrenCount: '1',
+          spouseAddress: '東京都○○区○○1-2-3',
+          livingExpenseAmount: '10万円', childSupportAmount: '5万円', alimonyAmount: '100万円',
+          propertyDivisionNote: '自宅は売却し、ローン残債清算後の差額を折半',
+          caseStatus: 'negotiating', nextDeadline: '2026-06-20',
+          issues: { infidelity: true, support: true, realestate: true, pension: true, alimony: true, negotiation: true },
+          opponentStatus: { divorce: 'agree', living: 'dispute', support: 'dispute', property: 'conditional', alimony: 'dispute', pension: 'agree', custody: 'agree' },
+          opponentNote: { living: '月5万円のみ提示', support: '月3万円を提示', property: '売却には応じるが分与比率に異論あり', alimony: '50万円を提示' },
+          memoOut: '【法的見通し検討メモ】\n依頼者：佐藤　恵子／相手方：佐藤　健一\n不貞行為を理由とする離婚を主張。婚姻費用・養育費は相手方提示額との差が大きく、証拠関係を精査の上、調停も視野に交渉を継続する方針。',
+          letterOut: '受任通知・初回請求書面（ドラフト）\n依頼者佐藤恵子様の代理人として、離婚・婚姻費用（月10万円）・養育費（月5万円）・財産分与・慰謝料（100万円）・年金分割についてご通知します。',
+          rebuttalOut: '反論書面（ドラフト）\n婚姻費用・養育費・慰謝料について、相手方提示額は依頼者の希望と大きく異なるため、根拠資料の開示を求める。',
+        }, makeDocs(docsBase, 4)),
+        history: [
+          { time: '2026/6/15 10:00:00', label: 'チェックリスト・聴取事項・請求書面を生成' },
+          { time: '2026/6/20 14:00:00', label: '相手方からの回答を反映' },
+          { time: '2026/6/20 14:05:00', label: '反論書面を生成' },
+        ],
+        negotiationLog: [
+          { time: '2026/6/15 10:00:00', label: '初回請求書面を生成', living: '10万円', livingNote: '', support: '5万円', supportNote: '', alimony: '100万円', alimonyNote: '' },
+          { time: '2026/6/20 14:05:00', label: '反論書面を生成', living: '10万円', livingNote: '月5万円のみ提示', support: '5万円', supportNote: '月3万円を提示', alimony: '100万円', alimonyNote: '50万円を提示' },
+        ],
+      },
+      {
+        id: 'demo_case_b',
+        label: '高橋様　離婚事件（相手方回答待ち）',
+        savedAt: '2026/6/24 11:30:00',
+        data: Object.assign({}, commonFirm, {
+          clientName: '高橋　直美', spouseName: '高橋　拓也',
+          marriageDate: '2017-09-01', separation: 'separated', separationDate: '2026-01-10',
+          hasChildren: 'no',
+          spouseAddress: '東京都○○区○○4-5-6',
+          livingExpenseAmount: '8万円',
+          caseStatus: 'waiting', nextDeadline: '2026-06-28',
+          issues: { personality: true, negotiation: true },
+          memoOut: '【法的見通し検討メモ】\n依頼者：高橋　直美／相手方：高橋　拓也\n性格の不一致を理由とする協議離婚を基本線とし、まずは受任通知の送付による協議から開始する方針。',
+          letterOut: '受任通知・初回請求書面（ドラフト）\n依頼者高橋直美様の代理人として、離婚及び婚姻費用（月8万円）についてご通知します。本書面到達後14日以内にご回答ください。',
+        }, makeDocs(docsBase.slice(0,5), 3)),
+        history: [
+          { time: '2026/6/24 11:30:00', label: 'チェックリスト・聴取事項・請求書面を生成' },
+        ],
+        negotiationLog: [
+          { time: '2026/6/24 11:30:00', label: '初回請求書面を生成', living: '8万円', livingNote: '', support: '', supportNote: '', alimony: '', alimonyNote: '' },
+        ],
+      },
+      {
+        id: 'demo_case_c',
+        label: '木村様　離婚事件（調停中）',
+        savedAt: '2026/6/10 9:00:00',
+        data: Object.assign({}, commonFirm, {
+          clientName: '木村　裕子', spouseName: '木村　正人',
+          marriageDate: '2012-04-20', separation: 'separated', separationDate: '2025-10-01',
+          hasChildren: 'yes', childrenCount: '2',
+          spouseAddress: '東京都○○区○○3-4-5',
+          livingExpenseAmount: '18万円', childSupportAmount: '10万円', alimonyAmount: '300万円',
+          propertyDivisionNote: '自宅は売却し折半。実家近くの土地は対象外。',
+          caseStatus: 'mediation', nextDeadline: '2026-07-15',
+          issues: { infidelity: true, custody: true, support: true, realestate: true, pension: true, alimony: true, mediation: true },
+          memoOut: '【法的見通し検討メモ】\n依頼者：木村　裕子／相手方：木村　正人\n協議では合意に至らず、調停移行。次回調停期日に向けて主張整理を進める。',
+          letterOut: '受任通知・初回請求書面（ドラフト）\n依頼者木村裕子様の代理人として、離婚・婚姻費用・養育費・財産分与・慰謝料・年金分割・親権についてご通知します。',
+        }, makeDocs(docsBase, 5)),
+        history: [
+          { time: '2026/6/10 9:00:00', label: 'チェックリスト・聴取事項・請求書面を生成' },
+          { time: '2026/6/18 13:00:00', label: '相手方からの回答を反映' },
+        ],
+        negotiationLog: [
+          { time: '2026/6/10 9:00:00', label: '初回請求書面を生成', living: '18万円', livingNote: '', support: '10万円', supportNote: '', alimony: '300万円', alimonyNote: '' },
+        ],
+      },
+      {
+        id: 'demo_case_d',
+        label: '中村様　離婚事件（示談成立）',
+        savedAt: '2026/6/5 16:00:00',
+        data: Object.assign({}, commonFirm, {
+          clientName: '中村　さゆり', spouseName: '中村　大輔',
+          marriageDate: '2010-11-03', separation: 'separated', separationDate: '2025-06-01',
+          hasChildren: 'yes', childrenCount: '1',
+          spouseAddress: '東京都○○区○○7-8-9',
+          livingExpenseAmount: '12万円', childSupportAmount: '6万円', alimonyAmount: '150万円',
+          propertyDivisionNote: '自宅は売却し折半',
+          caseStatus: 'settled', nextDeadline: '',
+          issues: { infidelity: true, support: true, realestate: true, pension: true, alimony: true, custody: true, negotiation: true },
+          opponentStatus: { divorce: 'agree', living: 'agree', support: 'agree', property: 'agree', alimony: 'agree', pension: 'agree', custody: 'agree' },
+          opponentNote: { living: '月12万円で合意', support: '月6万円で合意', alimony: '150万円で合意' },
+          finalTerms: {
+            divorce: '甲と中村大輔（乙）は、協議離婚することに合意する。',
+            living: '離婚成立までの婚姻費用は、月額12万円とする。',
+            support: '子1名の養育費は、月額6万円とする。',
+            property: '自宅は売却し、ローン残債清算後の差額を2分の1ずつ取得する。',
+            alimony: '乙は甲に対し、慰謝料として150万円を支払う。',
+            pension: '年金分割（合意分割）の按分割合を0.5とする。',
+            custody: '未成年の子の親権者は甲と定める。',
+          },
+          memoOut: '【法的見通し検討メモ】\n依頼者：中村　さゆり／相手方：中村　大輔\n交渉により全項目で合意に至り、示談成立。離婚協議書（公正証書）の作成手続に移行。',
+          letterOut: '受任通知・初回請求書面（ドラフト）\n依頼者中村さゆり様の代理人として、離婚・婚姻費用・養育費・財産分与・慰謝料・年金分割・親権についてご通知します。',
+          rebuttalOut: '確認書面（ドラフト）\n貴職よりいただきました譲歩案につき、依頼者と協議の上、合意する意向を確認しましたので、以下のとおり最終合意内容を確認いたします。',
+          agreementOut: '離婚協議書（案）\n\n中村　さゆり（以下「甲」という。）と中村　大輔（以下「乙」という。）は、甲乙間の離婚及びこれに伴う諸条件について、以下のとおり合意する。\n\n第1条（離婚）\n甲と中村大輔（乙）は、協議離婚することに合意する。\n\n第2条（婚姻費用）\n離婚成立までの婚姻費用は、月額12万円とする。\n\n第3条（養育費）\n子1名の養育費は、月額6万円とする。\n\n第4条（財産分与）\n自宅は売却し、ローン残債清算後の差額を2分の1ずつ取得する。\n\n第5条（慰謝料）\n乙は甲に対し、慰謝料として150万円を支払う。\n\n第6条（年金分割）\n年金分割（合意分割）の按分割合を0.5とする。\n\n第7条（親権）\n未成年の子の親権者は甲と定める。\n\n第8条（公正証書化）\n甲及び乙は、本合意の内容を確実に履行するため、別途、本協議書の内容に基づく公正証書を作成するものとする。\n\n以上の合意の成立を証するため、本書を2部作成し、甲乙each1部を保有する。\n\n2026/8/5\n\n甲（依頼者）　中村　さゆり　　　　　　　　　　印\n乙（相手方）　中村　大輔　　　　　　　　　　印',
+        }, makeDocs(docsBase, docsBase.length)),
+        history: [
+          { time: '2026/6/5 16:00:00', label: 'チェックリスト・聴取事項・請求書面を生成' },
+          { time: '2026/6/15 10:00:00', label: '相手方からの回答を反映' },
+          { time: '2026/6/15 10:10:00', label: '反論書面を生成' },
+          { time: '2026/6/22 15:00:00', label: '離婚協議書（案）を生成' },
+        ],
+        negotiationLog: [
+          { time: '2026/6/5 16:00:00', label: '初回請求書面を生成', living: '12万円', livingNote: '', support: '6万円', supportNote: '', alimony: '150万円', alimonyNote: '' },
+          { time: '2026/6/15 10:10:00', label: '反論書面を生成', living: '12万円', livingNote: '月12万円で合意', support: '6万円', supportNote: '月6万円で合意', alimony: '150万円', alimonyNote: '150万円で合意' },
+        ],
+      },
+    ];
+
+    demoCases.forEach(c => {
+      store[c.id] = { label: c.label, savedAt: c.savedAt, data: c.data, history: c.history, negotiationLog: c.negotiationLog };
+    });
+
+    localStorage.setItem('divorceDemoSeeded_v1', '1');
+  }
+
+  saveCaseStore(store);
+}
+
+seedDemoData();
 renderOpponentTable();
 refreshCaseSelect();
 renderHistory();
