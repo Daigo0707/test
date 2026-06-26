@@ -578,7 +578,7 @@ function parseOpponentText(){
   // 隣接する別の文の語句（同意/争う等）を誤って取り込まないようにする
   const sentences = splitIntoUnits(text);
   const disputeRe = /争う(?!.{0,3}ない)|拒否|反対|応じない|認めない|不同意/;
-  const agreeRe = /同意|応じ(る|ます)|異議(は)?ない|認める|了承|問題ない|争わない/;
+  const agreeRe = /同意|応じ(る|ます)|異議(は)?(ない|ありません|ございません)|認める|了承|問題ない|争わない/;
 
   POINT_DEFS.forEach(p => {
     const sentence = sentences.find(s => p.keywordRe.test(s));
