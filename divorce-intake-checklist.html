@@ -551,12 +551,32 @@ function renderOpponentTable(){
   });
 }
 
+function splitIntoUnits(text){
+  // 「第3　養育費について」のような見出しのみの行と、続く本文行が別行になっている
+  // 書面形式に対応するため、句点（。）が出るまで行をまとめて1つの単位とする。
+  // 句点で終わる行（箇条書き等）は従来どおり1行＝1単位として扱う。
+  const lines = text.split('\n');
+  const units = [];
+  let buf = '';
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) { if (buf) { units.push(buf); buf = ''; } return; }
+    buf += trimmed;
+    if (/。/.test(trimmed)) {
+      buf.split(/(?<=。)/).filter(s => s).forEach(s => units.push(s));
+      buf = '';
+    }
+  });
+  if (buf) units.push(buf);
+  return units;
+}
+
 function parseOpponentText(){
   const text = document.getElementById('opponentText').value;
   if (!text.trim()) return;
-  // 文単位で区切ってから争点語を探すことで、隣接する別の文の語句（同意/争う等）を
-  // 誤って取り込まないようにする
-  const sentences = text.split(/(?<=[。\n])/).filter(s => s.trim());
+  // 文単位（見出し＋本文の結合を含む）で区切ってから争点語を探すことで、
+  // 隣接する別の文の語句（同意/争う等）を誤って取り込まないようにする
+  const sentences = splitIntoUnits(text);
   const disputeRe = /争う(?!.{0,3}ない)|拒否|反対|応じない|認めない|不同意/;
   const agreeRe = /同意|応じ(る|ます)|異議(は)?ない|認める|了承|問題ない|争わない/;
 
