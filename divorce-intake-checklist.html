@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>離婚事件 受任前ヒアリング支援ツール｜チェックリスト・聴取事項自動生成</title>
+<title>離婚事件 受任前ヒアリング支援ツール｜チェックリスト・聴取事項・請求書面自動生成</title>
 <style>
   :root{
     --navy:#0f2c4c;
@@ -54,6 +54,12 @@
   ul.qa li{position:relative;padding:7px 0 7px 22px;font-size:.92rem;border-bottom:1px dashed var(--line)}
   ul.qa li::before{content:"Q.";position:absolute;left:0;top:7px;color:var(--accent);font-weight:800;font-size:.85rem}
   .tag-cat{display:inline-block;background:var(--blue);color:#fff;font-size:.68rem;padding:2px 8px;border-radius:10px;margin-right:8px;vertical-align:middle}
+  table.points{width:100%;border-collapse:collapse;font-size:.88rem}
+  table.points th,table.points td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  table.points th{background:var(--bg);color:var(--navy);font-weight:800;width:9.5em}
+  table.points td.status-claim{color:var(--accent-dark);font-weight:700}
+  table.points td.status-na{color:#9aa6b2}
+  textarea#letterOut,textarea#memoOut{width:100%;min-height:420px;font-size:.86rem;line-height:1.9;padding:18px;border:1px solid var(--line);border-radius:8px;white-space:pre-wrap}
   @media print{
     header,.btn-row,.card.input-card{display:none}
     body{background:#fff}
@@ -67,7 +73,7 @@
   <div class="wrap">
     <div>
       <h1>離婚事件 受任前ヒアリング支援ツール</h1>
-      <p>依頼者の前情報・意向を入力 → 必要書類チェックリストと聴取事項を自動生成</p>
+      <p>依頼者の前情報・意向を入力 → 7項目の整理、必要書類・聴取事項、法的見通しメモ、受任通知書面を自動生成</p>
     </div>
   </div>
 </header>
@@ -158,8 +164,52 @@
       </div>
     </fieldset>
 
+    <h2 style="margin-top:8px">3. 請求内容・受任通知の送付先情報（書面用）</h2>
+    <div class="grid2">
+      <div class="field-wrap">
+        <label class="field">相手方の住所（送付先）</label>
+        <input type="text" id="spouseAddress" placeholder="例）東京都○○区○○1-2-3">
+      </div>
+      <div class="field-wrap">
+        <label class="field">回答期限（本書面到達後・日数）</label>
+        <input type="number" id="replyDays" value="14" min="1">
+      </div>
+      <div class="field-wrap">
+        <label class="field">婚姻費用の希望額（月額・任意）</label>
+        <input type="text" id="livingExpenseAmount" placeholder="例）15万円">
+      </div>
+      <div class="field-wrap">
+        <label class="field">養育費の希望額（月額・任意）</label>
+        <input type="text" id="childSupportAmount" placeholder="例）6万円">
+      </div>
+      <div class="field-wrap">
+        <label class="field">慰謝料の希望額（任意）</label>
+        <input type="text" id="alimonyAmount" placeholder="例）200万円">
+      </div>
+      <div class="field-wrap">
+        <label class="field">財産分与の希望（任意・概要）</label>
+        <input type="text" id="propertyDivisionNote" placeholder="例）自宅は売却し折半">
+      </div>
+      <div class="field-wrap">
+        <label class="field">事務所名</label>
+        <input type="text" id="firmName" placeholder="例）○○法律事務所">
+      </div>
+      <div class="field-wrap">
+        <label class="field">担当弁護士名</label>
+        <input type="text" id="lawyerName" placeholder="例）弁護士 ○○ ○○">
+      </div>
+      <div class="field-wrap">
+        <label class="field">事務所連絡先（電話・FAX等）</label>
+        <input type="text" id="firmContact" placeholder="例）TEL 03-0000-0000／FAX 03-0000-0001">
+      </div>
+      <div class="field-wrap">
+        <label class="field">事務所住所</label>
+        <input type="text" id="firmAddress" placeholder="例）東京都○○区○○4-5-6 ○○ビル3階">
+      </div>
+    </div>
+
     <div class="btn-row">
-      <button class="btn btn-accent" onclick="generate()">チェックリスト・聴取事項を生成</button>
+      <button class="btn btn-accent" onclick="generate()">チェックリスト・聴取事項・請求書面を生成</button>
       <button class="btn btn-outline" onclick="window.print()">印刷 / PDF保存</button>
     </div>
   </div>
@@ -169,6 +219,14 @@
       <div id="summaryHead" style="margin-bottom:18px;font-size:.9rem;color:var(--muted)"></div>
 
       <div class="result-section">
+        <h2>離婚事件で決めるべき7項目の整理</h2>
+        <table class="points">
+          <thead><tr><th>項目</th><th>方針・請求内容</th></tr></thead>
+          <tbody id="pointsBody"></tbody>
+        </table>
+      </div>
+
+      <div class="result-section">
         <h2>必要書類・資料チェックリスト</h2>
         <ul class="checklist" id="docList"></ul>
       </div>
@@ -176,6 +234,22 @@
       <div class="result-section">
         <h2>依頼者への聴取事項（ヒアリングシート）</h2>
         <ul class="qa" id="qaList"></ul>
+      </div>
+
+      <div class="result-section">
+        <h2>法的見通し（依頼者説明・内部検討用メモ）</h2>
+        <div class="btn-row" style="margin:0 0 12px">
+          <button class="btn btn-outline" onclick="copyArea('memoOut')">本文をコピー</button>
+        </div>
+        <textarea id="memoOut" readonly></textarea>
+      </div>
+
+      <div class="result-section">
+        <h2>相手方への受任通知・初回請求書面（ドラフト）</h2>
+        <div class="btn-row" style="margin:0 0 12px">
+          <button class="btn btn-outline" onclick="copyArea('letterOut')">本文をコピー</button>
+        </div>
+        <textarea id="letterOut" readonly></textarea>
       </div>
     </div>
   </div>
@@ -316,12 +390,58 @@ function generate(){
     qas.push('緊急性の高い事情（身の安全、子の引渡し等）があれば、最優先で対応すべき点を教えてください。');
   }
 
-  // 出力
+  // --- 付随情報の取得 ---
+  const spouseAddress = document.getElementById('spouseAddress').value || '（送付先住所未記入）';
+  const replyDays = document.getElementById('replyDays').value || '14';
+  const livingExpenseAmount = document.getElementById('livingExpenseAmount').value;
+  const childSupportAmount = document.getElementById('childSupportAmount').value;
+  const alimonyAmount = document.getElementById('alimonyAmount').value;
+  const propertyDivisionNote = document.getElementById('propertyDivisionNote').value;
+  const firmName = document.getElementById('firmName').value || '○○法律事務所';
+  const lawyerName = document.getElementById('lawyerName').value || '弁護士　○○　○○';
+  const firmContact = document.getElementById('firmContact').value || 'TEL ○○-○○○○-○○○○';
+  const firmAddress = document.getElementById('firmAddress').value || '（事務所住所未記入）';
+  const today = new Date().toLocaleDateString('ja-JP');
+
+  const hasFaultGround = checked('infidelity') || checked('dv') || checked('abandonment') || checked('addiction') || checked('mental');
+  const hasProperty = checked('realestate') || checked('savings') || checked('debt') || checked('business');
+  const wantsAlimony = checked('alimony') || checked('infidelity') || checked('dv');
+
+  // --- ① 7項目サマリー ---
+  const points = [];
+  points.push(['⑴ 離婚するか',
+    '依頼者は離婚を求める方針。' + (hasFaultGround ? '法定離婚原因（5号「その他婚姻を継続し難い重大な事由」等）の主張を検討。' : '主たる原因事実が明確でないため、まずは協議離婚を試み、不成立の場合は調停を検討。')]);
+  points.push(['⑵ 婚姻費用',
+    separated ? '別居中のため、合意又は調停で婚姻費用の分担を確保する必要あり。' + (livingExpenseAmount ? '依頼者希望額：月額' + livingExpenseAmount + '。' : '算定表に基づき希望額を確認予定。') : '同居中のため現時点では婚姻費用の問題は生じないが、別居開始時は別途検討。']);
+  points.push(['⑶ 養育費',
+    hasChildren ? (checked('support') ? '養育費の取り決めが必要。算定表を基準に協議。' + (childSupportAmount ? '依頼者希望額：月額' + childSupportAmount + '。' : '') : '子はいるが養育費の取り決め要否を依頼者に確認する必要あり。') : '未成年の子がいないため対象外。']);
+  points.push(['⑷ 財産分与',
+    hasProperty ? '対象財産（不動産・預貯金・債務等）の開示を受け、2分の1ルールを原則に分与方法を検討。' + (propertyDivisionNote ? '依頼者希望：' + propertyDivisionNote + '。' : '') : '現時点で分与対象となる財産の報告がないため、財産開示の聴取が必要。']);
+  points.push(['⑸ 慰謝料',
+    wantsAlimony ? '不貞・DV等の事実関係及び証拠の有無を精査の上、相当額を算定し請求。' + (alimonyAmount ? '依頼者希望額：' + alimonyAmount + '。' : '') : '現時点で慰謝料請求の根拠となる事実の申告なし。聴取により要否を再確認。']);
+  points.push(['⑹ 年金分割',
+    checked('pension') ? '年金分割（合意分割）を希望。年金事務所で情報通知書を取得し、分割割合（原則0.5）を協議。' : '年金分割の希望の有無を確認する必要あり。']);
+  points.push(['⑺ 親権',
+    hasChildren ? (checked('custody') ? '親権について争いが生じる可能性あり。主たる監護者・監護の継続性・子の意思等を踏まえて主張を構成。' : '親権について争いは想定されていないが、念のため監護状況を確認。') : '未成年の子がいないため対象外。']);
+
+  const pointsBody = document.getElementById('pointsBody');
+  pointsBody.innerHTML = '';
+  points.forEach(p=>{
+    const tr = document.createElement('tr');
+    const th = document.createElement('th');
+    th.textContent = p[0];
+    const td = document.createElement('td');
+    td.textContent = p[1];
+    tr.appendChild(th); tr.appendChild(td);
+    pointsBody.appendChild(tr);
+  });
+
+  // --- ② 出力ヘッダ ---
   document.getElementById('summaryHead').textContent =
     '依頼者：' + clientName + ' ／ 相手方：' + spouseName +
     ' ／ ' + (separated ? '別居中' : '同居中') +
     ' ／ 未成年の子：' + (hasChildren ? 'あり' : 'なし') +
-    ' ／ 作成日：' + new Date().toLocaleDateString('ja-JP');
+    ' ／ 作成日：' + today;
 
   const docList = document.getElementById('docList');
   docList.innerHTML = '';
@@ -339,8 +459,149 @@ function generate(){
     qaList.appendChild(li);
   });
 
+  // --- ③ 法的見通しメモ ---
+  const memoLines = [];
+  memoLines.push('【法的見通し検討メモ（依頼者説明・内部検討用）】');
+  memoLines.push('作成日：' + today);
+  memoLines.push('依頼者：' + clientName + '　／　相手方：' + spouseName);
+  memoLines.push('');
+  memoLines.push('■ 離婚原因の見通し');
+  if (hasFaultGround) {
+    const grounds = [];
+    if (checked('infidelity')) grounds.push('不貞行為（民法770条1項1号）');
+    if (checked('dv')) grounds.push('DV・モラハラ（同項5号「その他婚姻を継続し難い重大な事由」）');
+    if (checked('abandonment')) grounds.push('悪意の遺棄（同項2号）');
+    if (checked('addiction')) grounds.push('問題行動の常習性（同項5号該当の余地）');
+    if (checked('mental')) grounds.push('強度の精神病その他重大事由（同項4号・5号）');
+    memoLines.push('主張可能な法定離婚原因として、' + grounds.join('、') + 'が想定される。ただし、いずれも立証（証拠）の充実度により認定の確度が変わるため、客観的証拠（メッセージ、写真、診断書、第三者証言等）の収集状況を確認の上、立証方針を確定する必要がある。');
+    if (checked('infidelity')) memoLines.push('不貞については、性的関係を直接・間接に推認させる証拠（宿泊記録、メッセージ内容等）の有無が立証上の最大のポイントとなる。');
+    if (checked('dv')) memoLines.push('DV・モラハラについては、診断書・写真・録音等の客観的資料に加え、発生頻度・継続性を示す記録（日記、相談記録等）の有無を確認する。身の安全に懸念がある場合は保護命令の要否も併せて検討する。');
+  } else {
+    memoLines.push('現時点で申告された事情からは法定離婚原因に直結する事実は明確でなく、性格の不一致等を理由とする協議離婚を基本線とする。相手方が離婚に同意しない場合は、調停を経て、訴訟においては「婚姻を継続し難い重大な事由」の主張立証が必要となる見通し。');
+  }
+  memoLines.push('');
+  memoLines.push('■ 婚姻費用・養育費の見通し');
+  if (separated) {
+    memoLines.push('別居中であるため、離婚成立までの間、婚姻費用分担請求（民法752条、家事事件手続法）が可能。標準的算定方式（簡易算定表）により、双方の年収・子の数・年齢を基礎に算定される。' + (livingExpenseAmount ? '依頼者希望額（月額' + livingExpenseAmount + '）との整合性は、双方の収入資料確認後に検証する。' : '依頼者・相手方双方の収入資料の確認が先決事項となる。'));
+  } else {
+    memoLines.push('現時点で別居していないため婚姻費用の問題は生じていないが、別居開始と同時に分担請求権が発生する点を依頼者に説明済みとする。');
+  }
+  if (hasChildren) {
+    memoLines.push('養育費についても標準算定方式に基づく算定が原則であり、' + (checked('custody') ? '親権・監護権の帰属先によって算定の前提（監護親・非監護親）が変動する。' : '親権者を依頼者とする前提で算定するのが現時点の方針となる。'));
+  }
+  memoLines.push('');
+  memoLines.push('■ 財産分与の見通し');
+  if (hasProperty) {
+    memoLines.push('財産分与は、婚姻中に形成された財産を対象に、原則2分の1の割合で分与するのが裁判実務上の原則（最高裁判例の考え方に準拠）。特有財産（婚姻前の財産・相続財産等）に該当する部分は対象外となるため、取得時期・原資の確認が必要。' + (checked('debt') ? '債務についても財産分与の清算的要素として考慮する必要があり、生活費に起因する債務かどうかを精査する。' : '') + (checked('business') ? '事業用資産・会社株式が存在する場合、評価方法（純資産方式等）について専門的検討が必要となる可能性がある。' : ''));
+  } else {
+    memoLines.push('現時点で対象となる財産の報告がなく、財産分与の見通しを立てるには、依頼者・相手方双方の財産状況（不動産、預貯金、保険、債務等）の聴取・開示が必要。');
+  }
+  memoLines.push('');
+  memoLines.push('■ 慰謝料の見通し');
+  if (wantsAlimony) {
+    memoLines.push('離婚慰謝料の相場は事案の内容（不貞の期間・態様、DVの程度等）により大きく異なり、一般的には数十万円～300万円程度の範囲で認定される例が多い。' + (alimonyAmount ? '依頼者希望額（' + alimonyAmount + '）は、相場感や証拠の充実度を踏まえて協議・調停の場で柔らかく主張する方針とし、相手方の反応を見て調整する。' : '具体的な希望額は証拠関係を踏まえて改めて協議する。'));
+  } else {
+    memoLines.push('現時点で慰謝料請求の根拠となる具体的事実の申告がないため、請求の要否について改めて聴取の上判断する。');
+  }
+  memoLines.push('');
+  memoLines.push('■ 年金分割の見通し');
+  memoLines.push(checked('pension') ? '厚生年金等の保険料納付実績がある場合、合意分割（原則0.5）の対象となる。年金事務所で「年金分割のための情報通知書」を取得し、分割対象期間・按分割合を確定させる必要がある。' : '年金分割の希望や年金加入状況が未確認のため、依頼者に確認の上、必要に応じて情報通知書を取得する。');
+  memoLines.push('');
+  memoLines.push('■ 親権の見通し');
+  if (hasChildren) {
+    memoLines.push(checked('custody') ? '親権が争点となる場合、実務上は「主たる監護者」「監護の継続性」「子の意思（年齢相応）」「監護環境の安定性」等を総合的に考慮して判断される。現時点の監護状況（誰が日常的な世話をしているか）の整理が主張構成上重要となる。' : '現時点では親権について争いは想定されないが、相手方の対応によっては争点化する可能性もあるため、監護実績の記録化を依頼者に助言する。');
+  } else {
+    memoLines.push('未成年の子がいないため親権の問題は生じない。');
+  }
+  memoLines.push('');
+  memoLines.push('■ 進行方針');
+  if (checked('urgent')) {
+    memoLines.push('身の安全等緊急性の高い事情があるため、保護命令の申立てや別居の支援（シェルター等の情報提供）を優先的に検討する。');
+  }
+  if (checked('litigation')) {
+    memoLines.push('協議・調停が不成立となった場合は訴訟移行を想定し、立証計画（証拠収集・主張整理）を早期に準備する。');
+  } else if (checked('mediation')) {
+    memoLines.push('調停を中心に進める方針。家庭裁判所の管轄・申立書類の準備を進める。');
+  } else {
+    memoLines.push('まずは受任通知の送付による協議から開始し、相手方の対応を見て調停移行の要否を判断する。');
+  }
+  memoLines.push('');
+  memoLines.push('※本メモは聴取段階の限られた情報に基づく一般的な見通しであり、証拠関係の精査・追加の聴取結果により結論が変わり得る暫定的な検討メモである。');
+
+  document.getElementById('memoOut').value = memoLines.join('\n');
+
+  // --- ④ 受任通知・初回請求書面ドラフト ---
+  const letterLines = [];
+  letterLines.push(today);
+  letterLines.push('');
+  letterLines.push(spouseAddress);
+  letterLines.push(spouseName + '　様');
+  letterLines.push('');
+  letterLines.push(firmAddress);
+  letterLines.push(firmName);
+  letterLines.push(lawyerName);
+  letterLines.push(firmContact);
+  letterLines.push('');
+  letterLines.push('　　　　　　　　　　　　　　　　通　知　書');
+  letterLines.push('');
+  letterLines.push('前略　突然のご連絡となり恐縮ですが、当職は、貴殿の配偶者である' + clientName + '様（以下「依頼者」といいます。）より、貴殿との離婚に関する件につき委任を受けましたので、本書面をもってご通知申し上げます。');
+  letterLines.push('今後、本件に関するご連絡・お問い合わせは、依頼者本人ではなく、下記当職宛にいただきますようお願い申し上げます。');
+  letterLines.push('');
+  letterLines.push('第1　離婚の請求');
+  letterLines.push('依頼者は、貴殿との離婚を求めます。');
+  letterLines.push('');
+
+  let sec = 2;
+  if (separated) {
+    letterLines.push('第' + sec + '　婚姻費用の分担');
+    letterLines.push('依頼者は現在貴殿と別居しておりますので、離婚成立に至るまでの間の婚姻費用の分担を求めます。' + (livingExpenseAmount ? '具体的には、月額' + livingExpenseAmount + 'を目安とした分担をお願いいたします。' : '標準算定方式に基づく適正額について、双方の収入資料を踏まえてご回答ください。'));
+    letterLines.push('');
+    sec++;
+  }
+  if (hasChildren) {
+    letterLines.push('第' + sec + '　養育費');
+    letterLines.push('お子様の養育費につきましては、標準算定方式を踏まえ、' + (childSupportAmount ? '月額' + childSupportAmount + 'を目安として協議させていただきたく存じます。' : '双方の年収等の資料を確認した上で、改めて具体的な金額をご提案いたします。'));
+    letterLines.push('');
+    sec++;
+  }
+  letterLines.push('第' + sec + '　財産分与');
+  letterLines.push('婚姻中に形成された財産（不動産、預貯金、保険、その他資産及び債務）につきまして、財産分与のご協議をお願いいたします。' + (propertyDivisionNote ? '依頼者としては、' + propertyDivisionNote + 'を希望しております。' : '貴殿が把握している財産の開示についてもご協力をお願いいたします。'));
+  letterLines.push('');
+  sec++;
+  if (wantsAlimony) {
+    letterLines.push('第' + sec + '　慰謝料');
+    letterLines.push('依頼者は、本件離婚に至る事情により多大な精神的苦痛を受けております。これにつき、慰謝料として' + (alimonyAmount ? alimonyAmount : '相当額') + 'のお支払いを求めます。');
+    letterLines.push('');
+    sec++;
+  }
+  if (checked('pension')) {
+    letterLines.push('第' + sec + '　年金分割');
+    letterLines.push('年金分割（合意分割）の手続につきましても、原則どおりの割合（0.5）にて分割することにご同意いただきますようお願いいたします。');
+    letterLines.push('');
+    sec++;
+  }
+  if (hasChildren) {
+    letterLines.push('第' + sec + '　親権');
+    letterLines.push('お子様の親権につきましては、依頼者が取得することを希望いたします。' + (checked('custody') ? 'この点につきご異論がある場合には、現在の監護状況等を踏まえ、改めて協議させていただきたく存じます。' : ''));
+    letterLines.push('');
+    sec++;
+  }
+
+  letterLines.push('以上の各事項につきまして、本書面到達後' + replyDays + '日以内に、当職宛にご回答くださいますようお願い申し上げます。');
+  letterLines.push('期間内に誠意あるご回答をいただけない場合には、家庭裁判所への調停申立て等、法的手続に移行させていただく場合がございますので、あらかじめご了承おきください。');
+  letterLines.push('');
+  letterLines.push('草々');
+
+  document.getElementById('letterOut').value = letterLines.join('\n');
+
   document.getElementById('result').style.display = 'block';
   document.getElementById('result').scrollIntoView({behavior:'smooth'});
+}
+
+function copyArea(id){
+  const el = document.getElementById(id);
+  el.select();
+  document.execCommand('copy');
 }
 </script>
 
