@@ -81,6 +81,24 @@
 <div class="wrap">
 
   <div class="card input-card">
+    <h2>0. 依頼者情報のまとめ入力（自由記述）</h2>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">
+      聴取メモをそのまま貼り付けて「自動入力」を押すと、下記フォームにできるだけ反映します（反映後は必ず内容をご確認・修正してください）。
+    </p>
+    <div class="field-wrap">
+      <textarea id="freeText" rows="9" placeholder="例）
+依頼者：田中花子　相手方：田中太郎
+婚姻日：2015-04-10
+別居中（2024-09-01から）
+子：2人いる
+事情：相手の不貞行為が発覚。DVもあった。親権を希望、養育費の取り決めが必要。自宅（不動産）と預貯金がある。年金分割を希望。慰謝料200万円を希望。まずは調停を検討している。"></textarea>
+    </div>
+    <div class="btn-row" style="margin:0 0 4px">
+      <button class="btn btn-accent" onclick="parseFreeText()">自動入力</button>
+    </div>
+  </div>
+
+  <div class="card input-card">
     <h2>1. 基本情報</h2>
     <div class="grid2">
       <div class="field-wrap">
@@ -266,6 +284,77 @@ document.getElementById('hasChildren').addEventListener('change', function(){
 
 function checked(issue){
   return document.querySelector('input[data-issue="'+issue+'"]').checked;
+}
+
+function setIssue(issue, value){
+  const el = document.querySelector('input[data-issue="'+issue+'"]');
+  if (el) el.checked = value;
+}
+
+function toIsoDate(str){
+  if (!str) return '';
+  let m = str.match(/(\d{4})[年\/\-](\d{1,2})[月\/\-](\d{1,2})/);
+  if (m) return m[1] + '-' + m[2].padStart(2,'0') + '-' + m[3].padStart(2,'0');
+  return '';
+}
+
+function parseFreeText(){
+  const text = document.getElementById('freeText').value;
+  if (!text.trim()) return;
+
+  const nameMatch1 = text.match(/依頼者[:：]?\s*([^\s　、。\n]+)/);
+  const nameMatch2 = text.match(/相手方[:：]?\s*([^\s　、。\n]+)/);
+  if (nameMatch1) document.getElementById('clientName').value = nameMatch1[1];
+  if (nameMatch2) document.getElementById('spouseName').value = nameMatch2[1];
+
+  const marriageMatch = text.match(/婚姻[日)）]*[:：]?\s*([0-9０-９年月日\/\-]+)/);
+  const marriageIso = marriageMatch ? toIsoDate(marriageMatch[1]) : '';
+  if (marriageIso) document.getElementById('marriageDate').value = marriageIso;
+
+  const separated = /別居中|別居して/.test(text);
+  document.getElementById('separation').value = separated ? 'separated' : 'none';
+  document.getElementById('separationDateWrap').style.display = separated ? 'block' : 'none';
+  if (separated) {
+    const sepMatch = text.match(/別居[^0-9]{0,6}([0-9０-９年月日\/\-]{6,})/);
+    const sepIso = sepMatch ? toIsoDate(sepMatch[1]) : '';
+    if (sepIso) document.getElementById('separationDate').value = sepIso;
+  }
+
+  const hasChildrenMatch = /子[はが：:]?\s*(\d+|[一二三四五六七八九])\s*人|子.*あり|子供.*いる|子.*いる/.test(text) && !/子.*いない|子.*なし/.test(text);
+  document.getElementById('hasChildren').value = hasChildrenMatch ? 'yes' : 'no';
+  document.getElementById('childrenCountWrap').style.display = hasChildrenMatch ? 'block' : 'none';
+  const countMatch = text.match(/子[はが：:]?\s*(\d+)\s*人/);
+  if (countMatch) document.getElementById('childrenCount').value = countMatch[1];
+
+  const kw = (re) => re.test(text);
+  setIssue('infidelity', kw(/不貞|浮気|不倫/));
+  setIssue('dv', kw(/DV|モラハラ|モラルハラスメント/));
+  setIssue('abandonment', kw(/悪意の遺棄|生活費を渡さない|生活費の不払い|家出/));
+  setIssue('personality', kw(/性格の不一致|価値観の違い|価値観の相違/));
+  setIssue('addiction', kw(/ギャンブル|アルコール依存|薬物/));
+  setIssue('mental', kw(/精神病|精神疾患/));
+  setIssue('custody', kw(/親権/));
+  setIssue('visitation', kw(/面会交流/));
+  setIssue('support', kw(/養育費/));
+  setIssue('realestate', kw(/不動産|自宅|マンション|持ち家/));
+  setIssue('savings', kw(/預貯金|貯金|株式|証券/));
+  setIssue('debt', kw(/借金|ローン|負債/));
+  setIssue('business', kw(/自営業|会社経営|法人/));
+  setIssue('pension', kw(/年金分割/));
+  setIssue('alimony', kw(/慰謝料/));
+  setIssue('negotiation', kw(/協議/));
+  setIssue('mediation', kw(/調停/));
+  setIssue('litigation', kw(/訴訟|裁判/));
+  setIssue('urgent', kw(/緊急|身の安全|保護命令/));
+
+  const alimonyAmt = text.match(/慰謝料[^0-9]{0,6}(\d+万円)/);
+  if (alimonyAmt) document.getElementById('alimonyAmount').value = alimonyAmt[1];
+  const supportAmt = text.match(/養育費[^0-9]{0,6}(\d+万円)/);
+  if (supportAmt) document.getElementById('childSupportAmount').value = supportAmt[1];
+  const livingAmt = text.match(/婚姻費用[^0-9]{0,6}(\d+万円)/);
+  if (livingAmt) document.getElementById('livingExpenseAmount').value = livingAmt[1];
+
+  document.getElementById('clientName').closest('.card').scrollIntoView({behavior:'smooth'});
 }
 
 function generate(){
