@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>経営ダッシュボード｜法律事務所マネージャー支援ツール</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5/papaparse.min.js"></script>
+<style>
+  :root{
+    --navy:#0f2c4c;
+    --blue:#1c6dd0;
+    --accent:#e8852b;
+    --bg:#f5f7fa;
+    --text:#26303a;
+    --muted:#5f6b78;
+    --line:#e2e8f0;
+    --good:#1c8a4b;
+    --bad:#c0392b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;color:var(--text);background:var(--bg);line-height:1.7}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 20px 80px}
+  header{background:var(--navy);color:#fff;padding:18px 0}
+  header .wrap{display:flex;align-items:center;justify-content:space-between}
+  header h1{font-size:1.25rem;font-weight:800}
+  header p{font-size:.78rem;color:#c8d6e6}
+
+  .panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:24px;margin-bottom:24px;box-shadow:0 4px 14px rgba(15,44,76,.05)}
+  .panel h2{font-size:1.05rem;color:var(--navy);font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .panel h2 .badge{font-size:.65rem;background:var(--blue);color:#fff;padding:3px 9px;border-radius:20px;font-weight:700}
+
+  /* data input */
+  .input-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .input-row input, .input-row select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:.88rem;flex:1;min-width:110px}
+  .btn{display:inline-block;border:none;border-radius:8px;font-weight:700;padding:9px 18px;cursor:pointer;font-size:.88rem}
+  .btn-primary{background:var(--blue);color:#fff}
+  .btn-accent{background:var(--accent);color:#fff}
+  .btn-ghost{background:#fff;border:1px solid var(--line);color:var(--text)}
+  .btn-danger{background:#fff;border:1px solid var(--bad);color:var(--bad)}
+  .row-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+  .hint{font-size:.78rem;color:var(--muted);margin-top:6px}
+
+  table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:10px}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  th:first-child,td:first-child,th:nth-child(2),td:nth-child(2),th:nth-child(3),td:nth-child(3){text-align:left}
+  th{color:var(--muted);font-weight:700;background:#fafbfc}
+  td.del{text-align:center;color:var(--bad);cursor:pointer;font-weight:700}
+  tbody tr:hover{background:#f8fafc}
+
+  /* KPI cards */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px}
+  .kpi .label{font-size:.78rem;color:var(--muted);font-weight:700;margin-bottom:6px}
+  .kpi .value{font-size:1.55rem;font-weight:800;color:var(--navy)}
+  .kpi .delta{font-size:.78rem;font-weight:700;margin-top:4px}
+  .delta.up{color:var(--good)}
+  .delta.down{color:var(--bad)}
+  @media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
+
+  .charts{display:grid;grid-template-columns:1.4fr 1fr;gap:20px}
+  .charts .panel canvas{max-height:320px}
+  @media(max-width:900px){.charts{grid-template-columns:1fr}}
+
+  .insight{border-left:4px solid var(--blue);background:#f1f6fc;border-radius:0 8px 8px 0;padding:14px 16px;margin-bottom:10px;font-size:.9rem}
+  .insight.warn{border-color:var(--accent);background:#fdf3e9}
+  .insight strong{color:var(--navy)}
+
+  textarea#reportOutput{width:100%;min-height:380px;border:1px solid var(--line);border-radius:10px;padding:16px;font-size:.9rem;font-family:inherit;line-height:1.9;resize:vertical;white-space:pre-wrap}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .empty{color:var(--muted);font-size:.88rem;text-align:center;padding:30px 0}
+  @media print{
+    header,.panel h2 .badge,.toolbar,.input-row,.row-actions,#dataPanel,.btn{display:none !important}
+    body{background:#fff}
+    .panel{box-shadow:none;border:none}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div>
+      <h1>経営ダッシュボード</h1>
+      <p>法律事務所マネージャー向け 売上・統計分析支援ツール</p>
+    </div>
+    <div style="font-size:.78rem;color:#c8d6e6">データはこの端末のブラウザ内に保存されます（外部送信なし）</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="panel" id="dataPanel">
+    <h2>月次データ入力 <span class="badge">月・分野・弁護士単位で記録</span></h2>
+    <div class="input-row">
+      <input type="month" id="f-month" title="対象月">
+      <input type="text" id="f-area" placeholder="分野（例: 労働 / 家事 / 企業法務）">
+      <input type="text" id="f-lawyer" placeholder="担当弁護士名">
+      <input type="number" id="f-consult" placeholder="相談件数" min="0">
+      <input type="number" id="f-accept" placeholder="受任件数" min="0">
+      <input type="number" id="f-sales" placeholder="売上（円）" min="0">
+      <button class="btn btn-primary" id="addRowBtn">追加</button>
+    </div>
+    <div class="row-actions">
+      <label class="btn btn-ghost" style="cursor:pointer">
+        CSV取込
+        <input type="file" id="csvInput" accept=".csv" style="display:none">
+      </label>
+      <button class="btn btn-ghost" id="downloadTemplateBtn">CSVテンプレートをダウンロード</button>
+      <button class="btn btn-ghost" id="exportCsvBtn">現在のデータをCSV出力</button>
+      <button class="btn btn-danger" id="clearAllBtn">全データ削除</button>
+    </div>
+    <p class="hint">CSV列: 月(YYYY-MM), 分野, 担当弁護士, 相談件数, 受任件数, 売上</p>
+
+    <table id="dataTable" style="display:none">
+      <thead>
+        <tr><th>月</th><th>分野</th><th>担当弁護士</th><th>相談件数</th><th>受任件数</th><th>受任率</th><th>売上</th><th>削除</th></tr>
+      </thead>
+      <tbody id="dataTbody"></tbody>
+    </table>
+    <p class="empty" id="emptyMsg">データがまだありません。上のフォームから入力するか、CSVを取り込んでください。</p>
+  </section>
+
+  <section id="analysisSection" style="display:none">
+
+    <div class="kpis" id="kpiCards"></div>
+
+    <div class="charts" style="margin-top:24px">
+      <div class="panel">
+        <h2>月別売上推移</h2>
+        <canvas id="trendChart"></canvas>
+      </div>
+      <div class="panel">
+        <h2>分野別売上構成（直近月）</h2>
+        <canvas id="areaChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>弁護士別パフォーマンス（直近月）</h2>
+      <canvas id="lawyerChart" style="max-height:300px"></canvas>
+    </div>
+
+    <div class="panel">
+      <h2>改善提案（簡易分析） <span class="badge">自動生成</span></h2>
+      <div id="insights"></div>
+    </div>
+
+    <div class="panel">
+      <h2>経営会議報告ドラフト</h2>
+      <div class="toolbar">
+        <button class="btn btn-accent" id="genReportBtn">ドラフトを生成</button>
+        <button class="btn btn-ghost" id="copyReportBtn">コピー</button>
+        <button class="btn btn-ghost" id="printReportBtn">印刷／PDF出力</button>
+      </div>
+      <textarea id="reportOutput" placeholder="「ドラフトを生成」を押すと、直近データに基づく報告文案がここに表示されます。内容は自由に編集できます。"></textarea>
+    </div>
+
+  </section>
+
+</div>
+
+<script>
+const STORAGE_KEY = 'lawfirm_manager_records_v1';
+
+function loadRecords(){
+  try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }catch(e){ return []; }
+}
+function saveRecords(records){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+}
+let records = loadRecords();
+
+const $ = (id) => document.getElementById(id);
+
+function normalizeRecord(r){
+  return {
+    month: String(r.month||r['月']||'').trim(),
+    area: String(r.area||r['分野']||'').trim(),
+    lawyer: String(r.lawyer||r['担当弁護士']||'').trim(),
+    consult: Number(r.consult ?? r['相談件数'] ?? 0) || 0,
+    accept: Number(r.accept ?? r['受任件数'] ?? 0) || 0,
+    sales: Number(r.sales ?? r['売上'] ?? 0) || 0,
+  };
+}
+
+function addRecord(rec){
+  records.push(normalizeRecord(rec));
+  records.sort((a,b)=> a.month.localeCompare(b.month));
+  saveRecords(records);
+  renderAll();
+}
+
+function removeRecord(idx){
+  records.splice(idx,1);
+  saveRecords(records);
+  renderAll();
+}
+
+$('addRowBtn').addEventListener('click', () => {
+  const month = $('f-month').value;
+  const area = $('f-area').value.trim();
+  const lawyer = $('f-lawyer').value.trim();
+  const consult = Number($('f-consult').value || 0);
+  const accept = Number($('f-accept').value || 0);
+  const sales = Number($('f-sales').value || 0);
+  if(!month || !area || !lawyer){
+    alert('月・分野・担当弁護士は必須です。');
+    return;
+  }
+  addRecord({month,area,lawyer,consult,accept,sales});
+  ['f-area','f-lawyer','f-consult','f-accept','f-sales'].forEach(id => $(id).value = '');
+});
+
+$('clearAllBtn').addEventListener('click', () => {
+  if(confirm('保存されている全データを削除します。よろしいですか？')){
+    records = [];
+    saveRecords(records);
+    renderAll();
+  }
+});
+
+$('csvInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  Papa.parse(file, {
+    header: true,
+    skipEmptyLines: true,
+    complete: (result) => {
+      const imported = result.data.map(normalizeRecord).filter(r => r.month && r.area && r.lawyer);
+      if(imported.length === 0){
+        alert('有効な行が見つかりませんでした。CSVの列名をご確認ください。');
+        return;
+      }
+      records = records.concat(imported);
+      records.sort((a,b)=> a.month.localeCompare(b.month));
+      saveRecords(records);
+      renderAll();
+      e.target.value = '';
+    }
+  });
+});
+
+$('downloadTemplateBtn').addEventListener('click', () => {
+  const csv = '月,分野,担当弁護士,相談件数,受任件数,売上\n2026-04,労働,山田太郎,20,12,3600000\n2026-04,家事,佐藤花子,15,9,2700000\n';
+  downloadText(csv, 'template.csv', 'text/csv');
+});
+
+$('exportCsvBtn').addEventListener('click', () => {
+  const header = '月,分野,担当弁護士,相談件数,受任件数,売上\n';
+  const body = records.map(r => [r.month,r.area,r.lawyer,r.consult,r.accept,r.sales].join(',')).join('\n');
+  downloadText(header+body, 'sales_data.csv', 'text/csv');
+});
+
+function downloadText(content, filename, mime){
+  const blob = new Blob([content], {type: mime+';charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function renderTable(){
+  const tbody = $('dataTbody');
+  tbody.innerHTML = '';
+  if(records.length === 0){
+    $('dataTable').style.display = 'none';
+    $('emptyMsg').style.display = 'block';
+    return;
+  }
+  $('dataTable').style.display = 'table';
+  $('emptyMsg').style.display = 'none';
+  records.forEach((r, idx) => {
+    const rate = r.consult > 0 ? Math.round((r.accept/r.consult)*1000)/10 : 0;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.month}</td>
+      <td>${escapeHtml(r.area)}</td>
+      <td>${escapeHtml(r.lawyer)}</td>
+      <td>${r.consult}</td>
+      <td>${r.accept}</td>
+      <td>${rate}%</td>
+      <td>${r.sales.toLocaleString()}円</td>
+      <td class="del" data-idx="${idx}">✕</td>`;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('.del').forEach(el => {
+    el.addEventListener('click', () => removeRecord(Number(el.dataset.idx)));
+  });
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function months(){
+  return [...new Set(records.map(r=>r.month))].sort();
+}
+
+function monthlyTotals(){
+  const m = {};
+  records.forEach(r => {
+    m[r.month] = m[r.month] || {sales:0, consult:0, accept:0};
+    m[r.month].sales += r.sales;
+    m[r.month].consult += r.consult;
+    m[r.month].accept += r.accept;
+  });
+  return m;
+}
+
+let trendChart, areaChart, lawyerChart;
+
+function renderKpis(){
+  const ms = months();
+  const totals = monthlyTotals();
+  const latest = ms[ms.length-1];
+  const prev = ms[ms.length-2];
+  const cur = totals[latest] || {sales:0,consult:0,accept:0};
+  const prv = prev ? totals[prev] : null;
+
+  const rate = cur.consult > 0 ? (cur.accept/cur.consult*100) : 0;
+  const avgDeal = cur.accept > 0 ? cur.sales / cur.accept : 0;
+
+  function delta(curVal, prevVal){
+    if(prv == null || prevVal === 0) return null;
+    const pct = ((curVal - prevVal) / prevVal) * 100;
+    return pct;
+  }
+  const salesDelta = delta(cur.sales, prv ? prv.sales : 0);
+  const rateDelta = prv ? rate - (prv.consult>0? prv.accept/prv.consult*100 : 0) : null;
+
+  function deltaHtml(d, suffix){
+    if(d === null) return '';
+    const cls = d >= 0 ? 'up' : 'down';
+    const sign = d >= 0 ? '+' : '';
+    return `<div class="delta ${cls}">前月比 ${sign}${d.toFixed(1)}${suffix}</div>`;
+  }
+
+  $('kpiCards').innerHTML = `
+    <div class="kpi"><div class="label">直近月（${latest}）売上</div><div class="value">${Math.round(cur.sales).toLocaleString()}円</div>${deltaHtml(salesDelta,'%')}</div>
+    <div class="kpi"><div class="label">相談件数</div><div class="value">${cur.consult}件</div></div>
+    <div class="kpi"><div class="label">受任率</div><div class="value">${rate.toFixed(1)}%</div>${deltaHtml(rateDelta,'pt')}</div>
+    <div class="kpi"><div class="label">案件単価（平均）</div><div class="value">${Math.round(avgDeal).toLocaleString()}円</div></div>
+  `;
+}
+
+function renderCharts(){
+  const ms = months();
+  const totals = monthlyTotals();
+  const latest = ms[ms.length-1];
+
+  if(trendChart) trendChart.destroy();
+  trendChart = new Chart($('trendChart'), {
+    type: 'line',
+    data: {
+      labels: ms,
+      datasets: [{
+        label: '売上（円）',
+        data: ms.map(m => totals[m].sales),
+        borderColor: '#1c6dd0',
+        backgroundColor: 'rgba(28,109,208,.12)',
+        fill: true,
+        tension: .25
+      }]
+    },
+    options: { plugins:{legend:{display:false}}, scales:{ y:{ ticks:{ callback:v=>v.toLocaleString() } } } }
+  });
+
+  const areaSales = {};
+  records.filter(r=>r.month===latest).forEach(r => {
+    areaSales[r.area] = (areaSales[r.area]||0) + r.sales;
+  });
+  if(areaChart) areaChart.destroy();
+  areaChart = new Chart($('areaChart'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(areaSales),
+      datasets: [{ data: Object.values(areaSales), backgroundColor: ['#1c6dd0','#e8852b','#1c8a4b','#7e57c2','#c0392b','#0f2c4c'] }]
+    },
+    options: { plugins:{legend:{position:'bottom'}} }
+  });
+
+  const lawyerSales = {};
+  records.filter(r=>r.month===latest).forEach(r => {
+    lawyerSales[r.lawyer] = (lawyerSales[r.lawyer]||0) + r.sales;
+  });
+  if(lawyerChart) lawyerChart.destroy();
+  lawyerChart = new Chart($('lawyerChart'), {
+    type: 'bar',
+    data: {
+      labels: Object.keys(lawyerSales),
+      datasets: [{ label:'売上（円）', data: Object.values(lawyerSales), backgroundColor:'#1c6dd0' }]
+    },
+    options: { plugins:{legend:{display:false}}, scales:{ y:{ ticks:{ callback:v=>v.toLocaleString() } } } }
+  });
+}
+
+function buildInsights(){
+  const ms = months();
+  const totals = monthlyTotals();
+  const latest = ms[ms.length-1];
+  const prev = ms[ms.length-2];
+  const cur = totals[latest];
+  const prv = prev ? totals[prev] : null;
+  const insights = [];
+
+  if(prv){
+    const change = ((cur.sales - prv.sales)/ (prv.sales||1)) *100;
+    if(change <= -10){
+      insights.push({warn:true, text:`直近月の売上は前月比 ${change.toFixed(1)}% と大きく減少しています。受任件数・単価のどちらが要因か分解し、原因（相談数の減少／受任率の低下／単価低下）を特定することを推奨します。`});
+    } else if(change >= 10){
+      insights.push({warn:false, text:`直近月の売上は前月比 +${change.toFixed(1)}% と好調です。要因となった分野・担当者の取組みを他分野へ展開できないか検討してください。`});
+    }
+  }
+
+  const rate = cur.consult > 0 ? cur.accept/cur.consult*100 : 0;
+  if(cur.consult > 0 && rate < 50){
+    insights.push({warn:true, text:`直近月の受任率は ${rate.toFixed(1)}% と低めです。初回相談の対応フローやヒアリング内容の見直し、相談後のフォロー体制強化を検討してください。`});
+  }
+
+  const areaSales = {};
+  records.filter(r=>r.month===latest).forEach(r => { areaSales[r.area] = (areaSales[r.area]||0) + r.sales; });
+  const totalSales = Object.values(areaSales).reduce((a,b)=>a+b,0);
+  const sortedAreas = Object.entries(areaSales).sort((a,b)=>b[1]-a[1]);
+  if(sortedAreas.length > 0 && totalSales > 0){
+    const [topArea, topVal] = sortedAreas[0];
+    const share = topVal/totalSales*100;
+    if(share >= 60){
+      insights.push({warn:true, text:`売上の${share.toFixed(0)}%が「${topArea}」分野に集中しています。事務所全体としては安定的な収益源ですが、特定分野への依存度が高く、市場変化に弱い構造です。他分野の集客強化や紹介経路の拡大を検討してください。`});
+    }
+  }
+
+  const lawyerSales = {};
+  records.filter(r=>r.month===latest).forEach(r => { lawyerSales[r.lawyer] = (lawyerSales[r.lawyer]||0) + r.sales; });
+  const lawyerEntries = Object.entries(lawyerSales).sort((a,b)=>b[1]-a[1]);
+  if(lawyerEntries.length >= 2){
+    const [topL, topV] = lawyerEntries[0];
+    const [botL, botV] = lawyerEntries[lawyerEntries.length-1];
+    if(topV > 0 && botV/topV < 0.3){
+      insights.push({warn:false, text:`担当者間の売上に大きな差があります（${topL}: ${Math.round(topV).toLocaleString()}円 ／ ${botL}: ${Math.round(botV).toLocaleString()}円）。${topL}の対応方法・案件構成を共有し、事務所内でのナレッジ展開を検討してください。`});
+    }
+  }
+
+  if(insights.length === 0){
+    insights.push({warn:false, text:'直近データに特筆すべき急激な変化は見られません。継続的なモニタリングを推奨します。'});
+  }
+  return insights;
+}
+
+function renderInsights(){
+  const insights = buildInsights();
+  $('insights').innerHTML = insights.map(i =>
+    `<div class="insight ${i.warn?'warn':''}"><strong>${i.warn?'要注意：':'ポイント：'}</strong>${i.text}</div>`
+  ).join('');
+}
+
+$('genReportBtn').addEventListener('click', () => {
+  const ms = months();
+  const totals = monthlyTotals();
+  const latest = ms[ms.length-1];
+  const prev = ms[ms.length-2];
+  const cur = totals[latest];
+  const prv = prev ? totals[prev] : null;
+  const rate = cur.consult>0 ? cur.accept/cur.consult*100 : 0;
+  const avgDeal = cur.accept>0 ? cur.sales/cur.accept : 0;
+
+  const areaSales = {};
+  records.filter(r=>r.month===latest).forEach(r => { areaSales[r.area] = (areaSales[r.area]||0) + r.sales; });
+  const areaLines = Object.entries(areaSales).sort((a,b)=>b[1]-a[1])
+    .map(([a,v]) => `　・${a}：${Math.round(v).toLocaleString()}円`).join('\n');
+
+  const lawyerSales = {};
+  records.filter(r=>r.month===latest).forEach(r => { lawyerSales[r.lawyer] = (lawyerSales[r.lawyer]||0) + r.sales; });
+  const lawyerLines = Object.entries(lawyerSales).sort((a,b)=>b[1]-a[1])
+    .map(([l,v]) => `　・${l}：${Math.round(v).toLocaleString()}円`).join('\n');
+
+  const insights = buildInsights().map(i => `・${i.text}`).join('\n');
+
+  const changeText = prv ? `（前月比 ${(((cur.sales-prv.sales)/(prv.sales||1))*100).toFixed(1)}%）` : '';
+
+  const report = `【経営会議報告資料（ドラフト）】
+対象月：${latest}
+作成日：${new Date().toLocaleDateString('ja-JP')}
+
+■ 売上概況
+当月売上は ${Math.round(cur.sales).toLocaleString()}円 でした${changeText}。
+相談件数 ${cur.consult}件、受任件数 ${cur.accept}件、受任率 ${rate.toFixed(1)}%、平均案件単価 ${Math.round(avgDeal).toLocaleString()}円。
+
+■ 分野別売上
+${areaLines}
+
+■ 担当者別売上
+${lawyerLines}
+
+■ 分析・改善提案
+${insights}
+
+■ 次回アクション（要記入）
+・
+・
+`;
+  $('reportOutput').value = report;
+});
+
+$('copyReportBtn').addEventListener('click', () => {
+  navigator.clipboard.writeText($('reportOutput').value).then(()=> alert('クリップボードにコピーしました。'));
+});
+
+$('printReportBtn').addEventListener('click', () => window.print());
+
+function renderAll(){
+  renderTable();
+  if(records.length === 0){
+    $('analysisSection').style.display = 'none';
+    return;
+  }
+  $('analysisSection').style.display = 'block';
+  renderKpis();
+  renderCharts();
+  renderInsights();
+}
+
+renderAll();
+</script>
+</body>
+</html>
